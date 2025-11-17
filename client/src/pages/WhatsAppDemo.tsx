@@ -61,6 +61,7 @@ export default function WhatsAppDemo() {
           messages={messages}
           onSendMessage={handleSendMessage}
           isProcessing={isProcessing}
+          recommendedProperties={intelligenceData?.recommendedProperties}
         />
       </div>
 

@@ -1,0 +1,314 @@
+# Rule: KeySync Lite – Property Retrieval with Images (Text-based)
+
+You are working on KeySync Lite, a real estate lead intelligence MVP.
+
+**Goal**:  
+Use **text-based retrieval** in Qdrant, with property **image URLs stored in payload**, so the frontend (WhatsApp + Gmail UIs) can show property cards with photos alongside AI replies.
+
+---
+
+## 1. Shared Property Model
+
+Create and reuse a single `Property` type.
+
+**Type definition** (adjust path to match project structure):
+
+```ts
+export interface Property {
+  id: string;
+  title: string;
+  description: string;
+  area: string;         // e.g. "Dubai Marina"
+  bedrooms: number;
+  price: number;
+  currency: string;     // e.g. "AED"
+  images: string[];     // list of image URLs
+}
+```
+
+Store this in a shared types file (backend and frontend should agree), for example:
+
+- **Backend**: `server/types/property.ts`
+- **Frontend**: `src/types/property.ts`
+
+If separate copies are needed for now, keep them identical.
+
+---
+
+## 2. Property Data Source
+
+Create a small curated list of properties with image URLs.
+
+**File**: `data/properties.json`
+
+**Structure**: array of Property objects
+
+**Example entry**:
+```json
+{
+  "id": "DUBAI-MARINA-001",
+  "title": "2BR Marina View Apartment",
+  "description": "Modern 2-bedroom apartment with full marina view and balcony.",
+  "area": "Dubai Marina",
+  "bedrooms": 2,
+  "price": 2100000,
+  "currency": "AED",
+  "images": [
+    "https://example.com/dubai-marina-001-1.jpg",
+    "https://example.com/dubai-marina-001-2.jpg"
+  ]
+}
+```
+
+Use 5–20 realistic Dubai properties for the hackathon.
+
+---
+
+## 3. Seed Script – Insert Properties into Qdrant
+
+Create a script to seed Qdrant with properties using text embeddings only.
+
+**File**: `scripts/seedPropertiesToQdrant.(ts|js)`
+
+**Script behavior**:
+
+1. Load `data/properties.json`.
+2. For each property, build a text string for embedding, for example:
+   ```ts
+   const textForEmbedding = `${title}. ${description}. Area: ${area}. ${bedrooms} bedrooms. Price: ${price} ${currency}.`;
+   ```
+3. Use the project's existing embedding helper (Gemini or other) to generate a vector.
+4. Upsert into a Qdrant collection named `properties` with:
+   - `vector`: embedding
+   - `payload`: full property object, including images.
+
+**Qdrant item schema**:
+```ts
+{
+  id: property.id,
+  vector: <embedding>,
+  payload: {
+    id,
+    title,
+    description,
+    area,
+    bedrooms,
+    price,
+    currency,
+    images
+  }
+}
+```
+
+Add an npm script in `package.json`, e.g.:
+```json
+"scripts": {
+  "seed:properties": "ts-node scripts/seedPropertiesToQdrant.ts"
+}
+```
+
+(or JS equivalent).
+
+The script should log how many properties were seeded and handle basic errors gracefully.
+
+---
+
+## 4. Backend – Extend Lead Analysis to Include Recommended Properties
+
+Identify the main lead analysis endpoint (in `server.js` or similar) where:
+
+1. User message is received
+2. Gemini is called
+3. Qdrant is queried
+4. An analysis object is returned
+
+**Extend this flow**:
+
+1. After embedding the user's message, query Qdrant `properties` collection with the same embedding.
+2. Retrieve top N property matches (e.g. `limit = 3`).
+3. Map each result's payload into a `Property` object.
+4. Add a `recommendedProperties` field to the analysis object.
+
+**Backend type extension**:
+```ts
+interface LeadAnalysis {
+  // existing fields...
+  recommendedProperties?: Property[];
+}
+```
+
+Make sure the JSON response to the frontend includes `recommendedProperties`.
+
+---
+
+## 5. LLM Prompt – Use Properties but Don't Paste URLs
+
+Update the Gemini prompt used for analysis/response:
+
+1. Provide a concise summary of candidate properties (title, area, beds, price, key selling points).
+2. Instruct the model:
+   - Use these properties to suggest relevant options to the client.
+   - Refer to them in natural language ("Here are 3 apartments in Dubai Marina that match your budget…").
+   - **Do not paste raw image URLs**. The UI will handle rendering images from the `images` field.
+
+The response should still be a normal text reply; the frontend will use `recommendedProperties` separately to display property cards with photos.
+
+---
+
+## 6. Frontend – Extend Analysis Types
+
+On the frontend, extend the analysis type to include `recommendedProperties`.
+
+**Example** (adjust path/naming):
+```ts
+import type { Property } from "./property"; // adjust relative path
+
+export interface LeadAnalysis {
+  // existing fields...
+  recommendedProperties?: Property[];
+}
+```
+
+Ensure all components using the analysis response are updated to this type.
+
+---
+
+## 7. WhatsApp View – Render Property Cards with Images
+
+In the WhatsApp simulation view (e.g. `WhatsAppView`):
+
+**When rendering an AI response message**:
+
+1. Check if `analysis.recommendedProperties` exists and has length > 0.
+2. If yes, render a list of property cards immediately after the AI reply bubble.
+
+**Create a dedicated component**, e.g. `PropertyCard`, with props: `property: Property`.
+
+**PropertyCard behavior**:
+
+- **Show**:
+  - Thumbnail image from `property.images[0]` (if exists).
+  - Title.
+  - Area.
+  - Bedrooms.
+  - Price + currency.
+
+- **Design**:
+  - Card style that fits inside a chat context.
+  - Rounded corners, subtle border, small shadow.
+  - Works with the dark theme and WhatsApp-style chat background.
+
+- **Layout**:
+  - On narrow/mobile widths: cards stack vertically.
+  - On wider screens: cards can appear in a small grid or horizontal scroll if multiple properties exist.
+
+- **Edge cases**:
+  - If `images` is empty, show a placeholder thumbnail (e.g. gradient block or icon).
+
+---
+
+## 8. Gmail View – Render Property Cards Inside Email Thread
+
+In the Gmail simulation view (e.g. `GmailView`):
+
+**When showing the AI-generated email reply**:
+
+1. Check `analysis.recommendedProperties`.
+2. Render property cards within the reply area, below or integrated into the body.
+
+You can reuse `PropertyCard`, or create an email-specific variant for better layout in the compose window.
+
+**Design**:
+
+- Cards should look like part of an email:
+  - Light background inside the email body section.
+  - Subtle border or divider between cards.
+- Same content: image thumbnail, title, area, beds, price.
+- Make sure it still feels like a realistic email preview plus attached property info.
+
+---
+
+## 9. AI Pipeline / Intelligence View – Show Recommended Properties
+
+In the AI Pipeline / Intelligence panel:
+
+**Add a dedicated section** labeled e.g. "Recommended Properties".
+
+**Show a compact version** of the same property info:
+
+- List or small grid with:
+  - Title
+  - Area
+  - Price
+  - Tiny thumbnail (optional)
+
+Ensure the list matches what is rendered in the WhatsApp/Gmail views.
+
+If no `recommendedProperties` are present, hide this section.
+
+---
+
+## 10. Robustness & Failures
+
+**If Qdrant retrieval fails**:
+
+- Log the error on the backend.
+- Still return a valid analysis object without `recommendedProperties`.
+
+**The UI must**:
+
+- Work normally even when `recommendedProperties` is undefined or an empty array.
+- Never crash when image URLs are missing or invalid.
+
+**Priority**: The lead scoring + AI reply flow should always work. Property images are an enhancement, not a single point of failure.
+
+---
+
+## Cursor Execution Prompts
+
+Here are a few **short prompts** you can paste into Cursor chat to actually make it work, after the rules file is in place.
+
+### Prompt 1 – Data + seed script
+
+> Using the `keysync-properties-retrieval` rules,  
+> 1. Create the shared `Property` type,  
+> 2. Add a `data/properties.json` file with 8–10 realistic Dubai properties (including image URLs), and  
+> 3. Implement the `scripts/seedPropertiesToQdrant` script plus the `seed:properties` npm script.  
+> Make sure the script uses our existing Qdrant + embedding setup and collection `properties`.
+
+### Prompt 2 – Backend retrieval + response
+
+> Using the `keysync-properties-retrieval` rules, extend the lead analysis endpoint to:
+> - Query the `properties` collection in Qdrant with the lead embedding,  
+> - Map results to the `Property` type,  
+> - Add `recommendedProperties` to the analysis response, and  
+> - Update the Gemini prompt so it uses these properties in its reply text (but doesn't paste URLs).  
+> Update backend types accordingly.
+
+### Prompt 3 – Frontend WhatsApp & Gmail rendering
+
+> Using the `keysync-properties-retrieval` rules, update the React frontend so that:
+> - The analysis response includes a typed `recommendedProperties` field,  
+> - WhatsAppView shows `PropertyCard` components with images after AI replies,  
+> - GmailView shows the same properties inside the email reply area, styled appropriately.  
+> Ensure all states (no properties, missing images) are handled gracefully.
+
+### Prompt 4 – AI Pipeline panel
+
+> Using the `keysync-properties-retrieval` rules, add a "Recommended Properties" section to the AI Pipeline / Intelligence panel that shows a compact list of the same recommended properties (matching what appears in WhatsApp/Gmail).
+
+---
+
+## Creative Spark
+
+Once Cursor has this baked in, you can ask it to do fun upgrades like:
+
+> "Add a 'View details' CTA on each PropertyCard that opens a side drawer with full description, amenities, and all images in a mini-gallery."
+
+Still no extra backend complexity, but it makes your MVP feel like a polished internal tool.
+
+---
+
+## Reflective Prompt
+
+Next move: which prompt do you want Cursor to run **first**—data seeding (`properties.json` + seed script) or frontend rendering (using dummy `recommendedProperties` data first and wiring backend later)? The order slightly changes how fast you can "see" the feature.

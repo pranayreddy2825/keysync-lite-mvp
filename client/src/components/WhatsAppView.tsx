@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { FaArrowLeft, FaVideo, FaPhone, FaEllipsisV, FaSmile, FaPaperclip, FaMicrophone } from 'react-icons/fa';
-import type { ChatMessage } from '../types';
+import type { ChatMessage, Property } from '../types';
+import PropertyCard from './PropertyCard';
 
 interface WhatsAppViewProps {
   messages: ChatMessage[];
   onSendMessage: (text: string) => void;
   isProcessing?: boolean;
+  recommendedProperties?: Property[];
 }
 
-export default function WhatsAppView({ messages, onSendMessage, isProcessing }: WhatsAppViewProps) {
+export default function WhatsAppView({ messages, onSendMessage, isProcessing, recommendedProperties = [] }: WhatsAppViewProps) {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -73,30 +75,47 @@ export default function WhatsAppView({ messages, onSendMessage, isProcessing }: 
               <p className="text-sm">Start a conversation to see messages here</p>
             </div>
           ) : (
-            messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.sender === 'client' ? 'justify-end' : 'justify-start'} mb-2`}
-              >
-                <div
-                  className={`max-w-[75%] rounded-lg px-3 py-2 ${
-                    message.sender === 'client'
-                      ? 'bg-[#056162] text-white rounded-tr-none'
-                      : 'bg-[#202c33] text-[#e9edef] rounded-tl-none'
-                  }`}
-                >
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
-                  <div className="flex items-center justify-end gap-1 mt-1">
-                    <span className="text-[10px] opacity-70">
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    {message.sender === 'client' && (
-                      <span className="text-[10px] opacity-70">✓✓</span>
+            <>
+              {messages.map((message, index) => {
+                const isLastAiMessage = message.sender === 'ai' && index === messages.length - 1;
+                const showProperties = isLastAiMessage && recommendedProperties && recommendedProperties.length > 0;
+                
+                return (
+                  <div key={message.id}>
+                    <div
+                      className={`flex ${message.sender === 'client' ? 'justify-end' : 'justify-start'} mb-2`}
+                    >
+                      <div
+                        className={`max-w-[75%] rounded-lg px-3 py-2 ${
+                          message.sender === 'client'
+                            ? 'bg-[#056162] text-white rounded-tr-none'
+                            : 'bg-[#202c33] text-[#e9edef] rounded-tl-none'
+                        }`}
+                      >
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
+                        <div className="flex items-center justify-end gap-1 mt-1">
+                          <span className="text-[10px] opacity-70">
+                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {message.sender === 'client' && (
+                            <span className="text-[10px] opacity-70">✓✓</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {showProperties && (
+                      <div className="flex justify-start mb-4 mt-2">
+                        <div className="max-w-[85%] space-y-3">
+                          {recommendedProperties.map((property) => (
+                            <PropertyCard key={property.id} property={property} variant="whatsapp" />
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
-              </div>
-            ))
+                );
+              })}
+            </>
           )}
           {isProcessing && (
             <div className="flex justify-start mb-2">

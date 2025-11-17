@@ -1,0 +1,133 @@
+[
+  {
+    "id": "JVC-RENTAL-001",
+    "title": "1BR Furnished Apartment in JVC",
+    "description": "Modern 1-bedroom apartment in Jumeirah Village Circle. Fully furnished, close to metro, perfect for young professionals. Includes parking and gym access.",
+    "area": "JVC",
+    "bedrooms": 1,
+    "price": 75000,
+    "currency": "AED",
+    "images": [
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800"
+    ]
+  },
+  {
+    "id": "MARINA-001",
+    "title": "2BR Marina View Apartment",
+    "description": "Stunning 2-bedroom apartment with full marina view and private balcony. High floor, modern finishes, ready to move in. Close to beach and restaurants.",
+    "area": "Dubai Marina",
+    "bedrooms": 2,
+    "price": 2100000,
+    "currency": "AED",
+    "images": [
+      "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800"
+    ]
+  },
+  {
+    "id": "PALM-LUXURY-001",
+    "title": "Luxury Villa on Palm Jumeirah",
+    "description": "Exclusive 5-bedroom villa with private beach access and infinity pool. Panoramic sea views, premium finishes, fully furnished. Perfect for high-net-worth families.",
+    "area": "Palm Jumeirah",
+    "bedrooms": 5,
+    "price": 12000000,
+    "currency": "AED",
+    "images": [
+      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800"
+    ]
+  },
+  {
+    "id": "CREEK-OFFPLAN-001",
+    "title": "Off-Plan 2BR in Dubai Creek Harbour",
+    "description": "Premium off-plan 2-bedroom apartment with payment plan options. Strong ROI potential, waterfront location, expected handover 2026. Flexible payment terms available.",
+    "area": "Dubai Creek Harbour",
+    "bedrooms": 2,
+    "price": 1800000,
+    "currency": "AED",
+    "images": [
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800",
+      "https://images.unsplash.com/photo-1600607687644-c7171b42498b?w=800"
+    ]
+  },
+  {
+    "id": "SPORTS-CITY-001",
+    "title": "2BR Unfurnished Apartment in Sports City",
+    "description": "Spacious 2-bedroom unfurnished apartment in Sports City. Family-friendly area, close to schools and parks. Great value for money, available immediately.",
+    "area": "Sports City",
+    "bedrooms": 2,
+    "price": 90000,
+    "currency": "AED",
+    "images": [
+      "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800",
+      "https://images.unsplash.com/photo-1505843513577-22bb7d21e455?w=800"
+    ]
+  },
+  {
+    "id": "MARINA-RENTAL-001",
+    "title": "1BR Marina Apartment for Rent",
+    "description": "Elegant 1-bedroom apartment in Dubai Marina with partial marina view. Fully furnished, modern amenities, walking distance to beach and metro.",
+    "area": "Dubai Marina",
+    "bedrooms": 1,
+    "price": 95000,
+    "currency": "AED",
+    "images": [
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800"
+    ]
+  },
+  {
+    "id": "DOWNTOWN-001",
+    "title": "3BR Luxury Apartment Downtown",
+    "description": "Premium 3-bedroom apartment in Downtown Dubai with Burj Khalifa views. High-end finishes, concierge service, close to Dubai Mall and metro.",
+    "area": "Downtown Dubai",
+    "bedrooms": 3,
+    "price": 4500000,
+    "currency": "AED",
+    "images": [
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800",
+      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800"
+    ]
+  },
+  {
+    "id": "JVC-2BR-001",
+    "title": "2BR Family Apartment in JVC",
+    "description": "Comfortable 2-bedroom apartment perfect for families. Unfurnished, close to schools and parks, great community amenities. Available for immediate move-in.",
+    "area": "JVC",
+    "bedrooms": 2,
+    "price": 85000,
+    "currency": "AED",
+    "images": [
+      "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800",
+      "https://images.unsplash.com/photo-1505843513577-22bb7d21e455?w=800"
+    ]
+  },
+  {
+    "id": "CREEK-READY-001",
+    "title": "Ready 2BR in Dubai Creek Harbour",
+    "description": "Modern 2-bedroom ready apartment in Dubai Creek Harbour. Waterfront location, contemporary design, immediate possession. Great investment opportunity.",
+    "area": "Dubai Creek Harbour",
+    "bedrooms": 2,
+    "price": 2200000,
+    "currency": "AED",
+    "images": [
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800"
+    ]
+  },
+  {
+    "id": "AL-BARSHA-001",
+    "title": "1BR Rental in Al Barsha",
+    "description": "Affordable 1-bedroom apartment in Al Barsha. Well-connected area, close to Mall of the Emirates, good for professionals and small families.",
+    "area": "Al Barsha",
+    "bedrooms": 1,
+    "price": 65000,
+    "currency": "AED",
+    "images": [
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800"
+    ]
+  }
+]
+

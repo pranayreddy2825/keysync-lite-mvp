@@ -3,6 +3,7 @@ import { Card } from './ui/Card';
 import Badge from './ui/Badge';
 import { Skeleton } from './ui/Skeleton';
 import { EmptyState } from './ui/EmptyState';
+import PropertyCard from './PropertyCard';
 import { FaCheckCircle, FaCircle, FaSpinner } from 'react-icons/fa';
 
 interface AiPipelinePanelProps {
@@ -252,6 +253,17 @@ export default function AiPipelinePanel({ data, isLoading = false, channel = 'wh
             </div>
           ))}
         </div>
+
+        {/* Recommended Properties */}
+        {data.recommendedProperties && data.recommendedProperties.length > 0 && (
+          <Card title="Recommended Properties">
+            <div className="space-y-3">
+              {data.recommendedProperties.map((property) => (
+                <PropertyCard key={property.id} property={property} variant="compact" />
+              ))}
+            </div>
+          </Card>
+        )}
 
         {/* Technical Details (Collapsible) */}
         <Card title="Technical Details">

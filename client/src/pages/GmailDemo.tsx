@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AiPipelinePanel from '../components/AiPipelinePanel';
+import PropertyCard from '../components/PropertyCard';
 import type { LeadResponse } from '../types';
 import { analyzeLead, type ApiError } from '../api/leadAnalysis';
 import { FaBold, FaItalic, FaUnderline, FaListUl, FaAlignLeft, FaTrash } from 'react-icons/fa';
@@ -174,7 +175,18 @@ export default function GmailDemo() {
                       </div>
                     </div>
                     <div className="text-gray-500 text-sm mb-4">to me</div>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">{selectedEmail.body}</div>
+                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed mb-4">{selectedEmail.body}</div>
+                    {/* Show properties if available */}
+                    {intelligenceData?.recommendedProperties && intelligenceData.recommendedProperties.length > 0 && (
+                      <div className="mt-6 pt-4 border-t border-gray-200">
+                        <h3 className="text-gray-900 font-semibold text-sm mb-3">Recommended Properties</h3>
+                        <div className="space-y-3">
+                          {intelligenceData.recommendedProperties.map((property) => (
+                            <PropertyCard key={property.id} property={property} variant="gmail" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

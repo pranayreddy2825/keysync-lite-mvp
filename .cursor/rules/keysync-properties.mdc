@@ -1,0 +1,199 @@
+# KeySync Lite – Property & Real Estate Domain Rules
+
+## Domain Context
+
+KeySync Lite is a lead intelligence system specifically designed for **Dubai real estate brokerages**. All AI analysis, responses, and knowledge retrieval should be grounded in Dubai's property market context.
+
+---
+
+## Dubai Real Estate Specifics
+
+### Key Areas & Neighborhoods
+
+- **Luxury Areas**: Palm Jumeirah, Downtown Dubai, Dubai Marina, Emirates Hills, Jumeirah
+- **Off-Plan Hotspots**: Dubai Creek Harbour, Sobha Hartland, Business Bay, Dubai Hills Estate
+- **Rental-Friendly**: JVC (Jumeirah Village Circle), Sports City, Al Barsha, JLT (Jumeirah Lakes Towers)
+- **Emerging**: Dubai South, Dubai Land, Arjan
+
+### Property Types & Terminology
+
+- **Villa**: Standalone house (typically 3BR+, often with pool/garden)
+- **Apartment/Flat**: Multi-unit residential building
+- **Studio**: Single room with kitchenette and bathroom
+- **1BR/2BR/3BR**: Bedroom count
+- **Off-Plan**: Pre-construction properties (payment plans, handover dates matter)
+- **Ready**: Completed properties (immediate possession)
+- **Furnished/Unfurnished**: Rental property condition
+
+### Budget Ranges (AED)
+
+- **Budget Rental**: 30k–60k AED/year (studios, 1BR in JVC/Sports City)
+- **Mid-Range Rental**: 60k–120k AED/year (2BR in JVC, 1BR in Marina)
+- **Premium Rental**: 120k+ AED/year (2BR+ in Marina, Downtown)
+- **Budget Purchase**: 500k–1.5M AED (studios, 1BR in emerging areas)
+- **Mid-Range Purchase**: 1.5M–4M AED (2BR apartments, small villas)
+- **Luxury Purchase**: 4M+ AED (villas, penthouses, prime locations)
+
+### Common Client Types
+
+- **Investor**: Focus on ROI, rental yield, payment plans, capital appreciation
+- **End-User**: Focus on location, schools, commute, lifestyle, move-in readiness
+- **Expat**: Often needs furnished, proximity to work/schools, visa considerations
+- **Local/Emirati**: May prefer villas, larger spaces, family-friendly areas
+
+---
+
+## Persona Specializations
+
+### Sarah Al Mansoori (Luxury Specialist)
+- **Focus**: High-budget sales (4M+ AED)
+- **Areas**: Palm Jumeirah, Downtown Dubai, Dubai Marina
+- **Tone**: Polished, concierge-style, emphasizes exclusivity, lifestyle, views
+- **Keywords**: Luxury, premium, exclusive, waterfront, penthouse, villa
+
+### Omar Haddad (Off-Plan Investment Advisor)
+- **Focus**: Investment properties, payment plans, ROI
+- **Areas**: Dubai Creek Harbour, Sobha Hartland, Business Bay
+- **Tone**: Practical, numbers-focused, explains payment plans, exit strategies
+- **Keywords**: Off-plan, investment, ROI, yield, payment plan, handover
+
+### Priya Varma (Rental Specialist)
+- **Focus**: Mid-budget rentals (30k–120k AED/year)
+- **Areas**: JVC, Sports City, Al Barsha
+- **Tone**: Friendly, practical, asks about move-in dates, family size, commute
+- **Keywords**: Rental, furnished, unfurnished, move-in, deposit, cheques
+
+---
+
+## Lead Scoring Factors
+
+When analyzing leads, prioritize:
+
+1. **Budget clarity** – Specific numbers are better than vague "looking for something nice"
+2. **Timeframe** – Urgent (next month) vs exploratory (just browsing)
+3. **Area specificity** – Named areas vs "somewhere in Dubai"
+4. **Intent clarity** – Clear buy/rent vs ambiguous inquiry
+5. **Client type signals** – Mentions of investment, ROI, moving, family
+
+**High-value indicators**:
+- Budget 4M+ AED
+- Luxury area mentions (Palm, Downtown, Marina)
+- Urgent timeframe (next 1–2 months)
+- Clear investment intent with budget
+
+**Escalation triggers**:
+- Lead score ≥ 8
+- Priority = "high"
+- Budget ≥ 4M AED
+- Luxury area + urgent timeframe
+
+---
+
+## Response Guidelines
+
+### Do's
+
+- Reference specific Dubai areas when mentioned
+- Use AED currency (not USD/EUR unless client specifies)
+- Mention payment plans for off-plan inquiries
+- Ask about visa status for rentals (affects requirements)
+- Reference RERA (Dubai's real estate regulator) when relevant
+- Use Dubai-specific terminology (cheques for rent, Ejari for registration)
+
+### Don'ts
+
+- Don't invent specific prices or yields not in knowledge base
+- Don't make legal claims beyond general information
+- Don't assume client nationality or visa status
+- Don't use generic real estate terms without Dubai context
+- Don't promise specific properties without availability check
+
+---
+
+## Knowledge Base (Qdrant) Content Types
+
+The Qdrant knowledge base should contain:
+
+1. **Area Information**
+   - Neighborhood descriptions
+   - Average prices (rental/purchase)
+   - Lifestyle factors (schools, beaches, metro access)
+   - Development status (established vs emerging)
+
+2. **Persona Style Guides**
+   - How each specialist communicates
+   - Tone and language patterns
+   - Common phrases and approaches
+
+3. **Process Information**
+   - Rental documentation requirements
+   - Off-plan payment plan structures
+   - Purchase process steps
+   - RERA regulations (high-level)
+
+4. **Market Context**
+   - Current trends (if available)
+   - Popular areas by client type
+   - Seasonal considerations
+
+---
+
+## Channel-Specific Considerations
+
+### WhatsApp
+- Short, conversational messages
+- Emoji-friendly (but professional)
+- Quick responses expected
+- Often mobile-first users
+
+### Email
+- More formal tone acceptable
+- Can include more detail
+- Subject line matters for context
+- May include attachments (property photos, brochures)
+
+### Portal
+- Often pre-qualified leads
+- May have property listings attached
+- Budget/area filters may be pre-applied
+- Expect more detailed initial inquiry
+
+---
+
+## AI Expectations for Cursor
+
+When working on property-related features:
+
+1. **Always use Dubai context** – Don't create generic real estate features
+2. **Respect persona assignments** – Each specialist has a distinct style
+3. **Handle missing data gracefully** – Show "—" or "Not specified" rather than guessing
+4. **Currency consistency** – Always use AED unless client specifies otherwise
+5. **Area validation** – If an area is mentioned, check if it's a real Dubai location
+6. **Budget formatting** – Display large numbers with M (millions) or K (thousands) for readability
+7. **Timeframe handling** – "Next month" is urgent, "exploring" is low urgency
+
+---
+
+## Example Lead Patterns
+
+### High-Value Lead (Escalate to Human)
+```
+"Looking for villa on Palm Jumeirah, budget 10M AED, ready to move in 2 months"
+→ Score: 9, Priority: high, Persona: Sarah, Handling: Human
+```
+
+### AI-Handled Rental Lead
+```
+"Need 1BR rental in JVC, budget 75k, moving next month"
+→ Score: 6, Priority: medium, Persona: Priya, Handling: AI
+```
+
+### Investment Inquiry
+```
+"Interested in off-plan investment Dubai Creek Harbour, 1.8M budget, payment plan preferred"
+→ Score: 7, Priority: medium, Persona: Omar, Handling: AI
+```
+
+---
+
+**Remember**: KeySync Lite is a tool for real estate professionals. Every feature should help them make faster, better decisions about leads. Accuracy and context matter more than flashy UI.

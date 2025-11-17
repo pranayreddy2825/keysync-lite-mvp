@@ -327,8 +327,8 @@ function generateBasicReply(analysis, persona) {
   return `${opener}${personaLine}${timeframeLine}${followUpQuestion}`;
 }
 
-// --- AI reply generator using Gemini + Qdrant context ---
-async function generateReplyAI(analysis, persona, qdrantSnippets) {
+// --- AI reply generator using Gemini + Qdrant context + Properties ---
+async function generateReplyAI(analysis, persona, qdrantSnippets, recommendedProperties = []) {
   try {
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
 
@@ -337,6 +337,15 @@ async function generateReplyAI(analysis, persona, qdrantSnippets) {
         .map((s, idx) => `Snippet ${idx + 1}: ${s.text}`)
         .join("\n");
 
+    // Format properties for the prompt
+    const propertiesText = recommendedProperties.length > 0
+      ? recommendedProperties
+          .map((p, idx) => 
+            `Property ${idx + 1}: ${p.title} in ${p.area}. ${p.bedrooms} bedrooms. Price: ${p.price.toLocaleString()} ${p.currency}. ${p.description}`
+          )
+          .join("\n")
+      : "(no properties available)";
+
     const prompt = `
 You are ${persona.name}, a ${persona.specialty} at a Dubai real estate brokerage.
 
@@ -344,17 +353,22 @@ You are replying over WhatsApp/email to a potential client.
 Write a short, clear, professional reply with 4–7 sentences.
 
 Constraints:
-- Use only the information provided in the analysis JSON and knowledge snippets.
+- Use only the information provided in the analysis JSON, knowledge snippets, and recommended properties.
 - Do NOT invent specific prices, yields, or legal details beyond what is given.
 - If you are not sure about something, say you'll confirm details instead of guessing.
 - Keep the tone aligned with this persona: ${persona.description}
 - Focus on being helpful, asking 1–2 smart follow-up questions, and inviting the client to continue.
+- If properties are available, naturally mention them in your reply (e.g., "I have a few options in ${analysis.area || 'that area'} that might interest you...").
+- Do NOT paste image URLs or property IDs. Just refer to properties naturally in your text.
 
 Lead analysis (JSON):
 ${JSON.stringify(analysis, null, 2)}
 
 Knowledge snippets (may be 0 or more, use only if relevant):
 ${knowledgeText || "(no extra snippets)"}
+
+Recommended properties (may be 0 or more):
+${propertiesText}
 
 Write your reply in first person as ${persona.name}.
 Only output the message text the client should see, no explanations or JSON.
@@ -541,6 +555,70 @@ async function getKnowledgeForLead(analysis, persona) {
   }
 }
 
+// --- Property retrieval helper ---
+async function getRecommendedProperties(analysis, text) {
+  if (!process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
+    console.warn("Qdrant env vars not set – skipping property lookup");
+    return [];
+  }
+
+  try {
+    // Build query text from lead message and analysis
+    const parts = [];
+    if (analysis.area && analysis.area !== "Unknown") {
+      parts.push(analysis.area);
+    }
+    if (analysis.intent) {
+      parts.push(analysis.intent === "rent" ? "rental" : "for sale");
+    }
+    if (analysis.budget && analysis.budget > 0) {
+      const budgetM = (analysis.budget / 1000000).toFixed(1);
+      parts.push(`budget ${budgetM}M AED`);
+    }
+    if (text) {
+      // Include original text for better matching
+      parts.push(text.substring(0, 100));
+    }
+
+    const queryText = parts.join(". ") || "Dubai property";
+
+    console.log("Property query text:", queryText);
+
+    // Embed query text
+    const queryVector = await embedText(queryText);
+
+    // Search properties collection
+    const searchResult = await qdrantClient.search("properties", {
+      vector: queryVector,
+      limit: 3,
+      with_payload: true,
+      with_vectors: false
+    });
+
+    console.log("Property search returned", searchResult.length, "properties");
+
+    // Map to Property format
+    const properties = (searchResult || []).map((pt) => {
+      const payload = pt.payload || {};
+      return {
+        id: payload.id,
+        title: payload.title,
+        description: payload.description,
+        area: payload.area,
+        bedrooms: payload.bedrooms,
+        price: payload.price,
+        currency: payload.currency || "AED",
+        images: payload.images || []
+      };
+    });
+
+    return properties;
+  } catch (err) {
+    console.error("getRecommendedProperties error:", err);
+    return [];
+  }
+}
+
 // --- Express middleware & routes ---
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -616,6 +694,16 @@ app.post("/api/lead", async (req, res) => {
     let handling_mode;
     let needs_human;
     let qdrantContext = [];
+    let recommendedProperties = [];
+
+    // Get recommended properties (for both AI and human-handled leads)
+    try {
+      recommendedProperties = await getRecommendedProperties(analysis, text);
+      console.log("Recommended properties:", recommendedProperties.length);
+    } catch (err) {
+      console.error("Error getting recommended properties:", err);
+      // Continue without properties - not a critical failure
+    }
 
     if (isHighPriority) {
       // High-value lead → escalate to human
@@ -632,12 +720,13 @@ app.post("/api/lead", async (req, res) => {
       // 3a) Get knowledge from Qdrant (Dubai area + persona style etc.)
       qdrantContext = await getKnowledgeForLead(analysis, safePersona);
 
-      // 3b) Generate grounded AI reply using Gemini + Qdrant
-      reply = await generateReplyAI(analysis, safePersona, qdrantContext);
+      // 3b) Generate grounded AI reply using Gemini + Qdrant + Properties
+      reply = await generateReplyAI(analysis, safePersona, qdrantContext, recommendedProperties);
     }
 
     // Attach context into analysis for debugging / UI
     analysis.qdrant_context = qdrantContext;
+    analysis.recommendedProperties = recommendedProperties;
 
     // 4) Knowledge section for quick summary
     const knowledge = [
@@ -658,7 +747,8 @@ app.post("/api/lead", async (req, res) => {
       knowledge,
       reply,
       handling_mode,
-      needs_human
+      needs_human,
+      recommendedProperties
     });
   } catch (err) {
     console.error("Error in /api/lead:", err);

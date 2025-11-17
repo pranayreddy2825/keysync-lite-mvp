@@ -32,6 +32,7 @@ export interface LeadResponse {
   reply: string;
   handling_mode: "ai" | "human";
   needs_human: boolean;
+  recommendedProperties?: Property[];
 }
 
 export interface ChatMessage {
@@ -39,5 +40,16 @@ export interface ChatMessage {
   text: string;
   sender: "client" | "ai";
   timestamp: Date;
+}
+
+export interface Property {
+  id: string;
+  title: string;
+  description: string;
+  area: string;
+  bedrooms: number;
+  price: number;
+  currency: string;
+  images: string[];
 }
 
