@@ -1,36 +1,134 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import RecentLeadsList from '../components/RecentLeadsList';
+import { FaWhatsapp, FaEnvelope, FaChartLine, FaClock, FaUserCheck, FaExclamationTriangle } from 'react-icons/fa';
 
 export default function Dashboard() {
+  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month' | 'all'>('today');
+  const [selectedTeam, setSelectedTeam] = useState<'all' | 'luxury' | 'off-plan' | 'rental'>('all');
+
   return (
     <div className="h-full bg-[#0a0a0a] text-white overflow-y-auto">
       <div className="max-w-7xl mx-auto p-6">
-        {/* Hero Section */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-3">KeySync Lite</h1>
-          <p className="text-gray-400 text-lg">Dubai Real Estate Lead Intelligence Platform</p>
+        {/* Hero Section with Filters */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">KeySync Lite</h1>
+              <p className="text-gray-400 text-lg">Dubai Real Estate Lead Intelligence Platform</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value as any)}
+                className="px-4 py-2 bg-[#111111] border border-gray-800 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+              >
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="all">All Time</option>
+              </select>
+              <select
+                value={selectedTeam}
+                onChange={(e) => setSelectedTeam(e.target.value as any)}
+                className="px-4 py-2 bg-[#111111] border border-gray-800 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+              >
+                <option value="all">All Teams</option>
+                <option value="luxury">Luxury</option>
+                <option value="off-plan">Off-Plan</option>
+                <option value="rental">Rental</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-[#111111] border border-gray-800 rounded-xl p-6">
-            <div className="text-gray-400 text-sm mb-2">Total Leads Processed</div>
+        {/* Enhanced Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-[#111111] border border-gray-800 rounded-xl p-6 hover:border-amber-500/30 transition-colors">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-gray-400 text-sm">Total Leads</div>
+              <FaChartLine className="w-5 h-5 text-amber-400" />
+            </div>
             <div className="text-3xl font-bold text-white mb-1">1,247</div>
-            <div className="text-emerald-400 text-sm">+12% this month</div>
+            <div className="text-emerald-400 text-sm">+12% vs last month</div>
           </div>
-          <div className="bg-[#111111] border border-gray-800 rounded-xl p-6">
-            <div className="text-gray-400 text-sm mb-2">AI Automation Rate</div>
+          <div className="bg-[#111111] border border-gray-800 rounded-xl p-6 hover:border-amber-500/30 transition-colors">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-gray-400 text-sm">AI Automation</div>
+              <FaUserCheck className="w-5 h-5 text-emerald-400" />
+            </div>
             <div className="text-3xl font-bold text-white mb-1">87%</div>
-            <div className="text-emerald-400 text-sm">Leads handled by AI</div>
+            <div className="text-emerald-400 text-sm">1,084 leads auto-handled</div>
           </div>
-          <div className="bg-[#111111] border border-gray-800 rounded-xl p-6">
-            <div className="text-gray-400 text-sm mb-2">Avg Response Time</div>
+          <div className="bg-[#111111] border border-gray-800 rounded-xl p-6 hover:border-amber-500/30 transition-colors">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-gray-400 text-sm">Avg Response</div>
+              <FaClock className="w-5 h-5 text-blue-400" />
+            </div>
             <div className="text-3xl font-bold text-white mb-1">0.6s</div>
             <div className="text-emerald-400 text-sm">Sub-second responses</div>
           </div>
+          <div className="bg-[#111111] border border-gray-800 rounded-xl p-6 hover:border-amber-500/30 transition-colors">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-gray-400 text-sm">High Priority</div>
+              <FaExclamationTriangle className="w-5 h-5 text-red-400" />
+            </div>
+            <div className="text-3xl font-bold text-white mb-1">163</div>
+            <div className="text-red-400 text-sm">Requires attention</div>
+          </div>
         </div>
 
-        {/* Demo Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Channel Breakdown */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-[#111111] border border-gray-800 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <FaWhatsapp className="w-6 h-6" style={{ color: '#25D366' }} />
+              <div>
+                <div className="text-gray-400 text-sm">WhatsApp Leads</div>
+                <div className="text-2xl font-bold text-white">892</div>
+              </div>
+            </div>
+            <div className="text-emerald-400 text-sm">71% of total leads</div>
+          </div>
+          <div className="bg-[#111111] border border-gray-800 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <FaEnvelope className="w-6 h-6" style={{ color: '#EA4335' }} />
+              <div>
+                <div className="text-gray-400 text-sm">Email Leads</div>
+                <div className="text-2xl font-bold text-white">298</div>
+              </div>
+            </div>
+            <div className="text-emerald-400 text-sm">24% of total leads</div>
+          </div>
+          <div className="bg-[#111111] border border-gray-800 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <FaChartLine className="w-6 h-6 text-gray-400" />
+              <div>
+                <div className="text-gray-400 text-sm">Portal Leads</div>
+                <div className="text-2xl font-bold text-white">57</div>
+              </div>
+            </div>
+            <div className="text-emerald-400 text-sm">5% of total leads</div>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Recent Leads List - Takes 2 columns */}
+          <div className="lg:col-span-2">
+            <RecentLeadsList
+              onLeadSelect={(lead) => {
+                // Navigate to appropriate channel based on lead
+                const channel = lead.channel === 'email' ? 'gmail' : lead.channel;
+                window.location.href = `/${channel}`;
+              }}
+            />
+          </div>
+
+          {/* Quick Actions - Takes 1 column */}
+          <div className="space-y-6">
+            {/* Demo Cards */}
+            <div className="space-y-4">
           <Link
             to="/whatsapp"
             className="bg-[#111111] border border-gray-800 rounded-xl p-6 hover:border-amber-500/50 transition-all group"
@@ -91,19 +189,7 @@ export default function Dashboard() {
             </p>
           </Link>
 
-          <div className="bg-[#111111] border border-gray-800 rounded-xl p-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-2xl">
-                📊
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Analytics</h3>
-                <p className="text-gray-400 text-sm">Coming soon</p>
-              </div>
             </div>
-            <p className="text-gray-500 text-sm">
-              Detailed analytics and insights into lead performance, conversion rates, and AI effectiveness.
-            </p>
           </div>
         </div>
 
