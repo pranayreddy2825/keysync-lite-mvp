@@ -1,0 +1,34 @@
+---
+alwaysApply: false
+---
+
+# Project: KeySync Lite – Real Estate Lead Intelligence MVP
+
+## Tech & Architecture
+
+- Backend: Node.js + Express serving a lead-intelligence API and static frontend.
+- Frontend (legacy): Plain HTML/CSS/JS in `/public`.
+- Frontend (new work): Use React + TypeScript + Tailwind CSS. Prefer functional components and hooks.
+
+## UI & UX Guidelines
+
+- Overall vibe: Modern SaaS dashboard, dark theme, Dubai real-estate aesthetics (subtle luxury, not flashy).
+- Layout:
+  - Left panel: Customer View (chat-style message interface).
+  - Right panel: Intelligence View (multi-column analysis: pipeline, persona/routing, scoring/insights).
+- Components:
+  - Use reusable components for: Chat layout, Message bubble, Tag/badge, Card, Tabs.
+- Responsiveness:
+  - Must work beautifully on desktop and reasonably on tablet/mobile (stack panels vertically on small screens).
+
+## Code Style
+
+- Use TypeScript for all new frontend files.
+- Use Tailwind utility classes rather than inline styles or raw CSS when possible.
+- Keep components small and composable. Move complex UI logic into custom hooks.
+
+## AI Expectations for Cursor
+
+- When adding UI features, update or create React components instead of editing legacy static HTML where possible.
+- Preserve existing backend API contracts; if a change is needed, propose it clearly in comments.
+- Always explain major refactors with a short comment at the top of the PR or file.
