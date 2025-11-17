@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KeySync Lite – Dubai Lead Console</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app">
+      <!-- Hero Header -->
+      <header class="app-header">
+        <div class="app-header-left">
+          <div class="logo-badge">K</div>
+          <div>
+            <h1>KeySync Lite</h1>
+            <p>Autonomous lead triage for Dubai real estate brokerages.</p>
+          </div>
+        </div>
+        <div class="header-pill-row">
+          <div class="header-pill">Gemini + Qdrant Powered</div>
+          <div class="header-subpill">Live Hackathon Demo · Dubai</div>
+        </div>
+      </header>
+
+      <!-- Overview KPIs -->
+      <section class="overview-row">
+        <div class="kpi-card">
+          <div class="kpi-label">AI automation rate</div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">87%</span>
+            <span class="kpi-tag kpi-tag-good">Leads fully handled by AI</span>
+          </div>
+          <p class="kpi-sub">
+            Low & mid-value leads answered instantly with persona-aware replies.
+          </p>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">High-value leads protected</div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">100%</span>
+            <span class="kpi-tag kpi-tag-warning">Escalated to humans</span>
+          </div>
+          <p class="kpi-sub">
+            Serious buyers on Palm / luxury inventory are always routed to a
+            senior broker.
+          </p>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Average AI response time</div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">0.6s</span>
+            <span class="kpi-tag kpi-tag-neutral">From message to reply</span>
+          </div>
+          <p class="kpi-sub">
+            Omni-channel: WhatsApp, email and portals – one console, one brain.
+          </p>
+        </div>
+      </section>
+
+      <!-- View Navigation -->
+      <nav class="view-nav">
+        <button class="view-tab view-tab-active" data-view="customer">
+          Customer View
+        </button>
+        <button class="view-tab" data-view="intelligence">
+          Intelligence View
+        </button>
+      </nav>
+
+      <!-- VIEW: Customer View (new WhatsApp-style demo) -->
+      <section id="view-customer" class="view view-active">
+        <div class="customer-layout">
+          <div class="customer-left">
+            <div class="wa-frame">
+              <div class="wa-header">
+                <div class="wa-avatar">K</div>
+                <div>
+                  <div class="wa-name">KeySync Dubai</div>
+                  <div class="wa-status">online · replying under 1s</div>
+                </div>
+              </div>
+              <div class="wa-chat">
+                <div class="wa-bubble wa-bubble-client">
+                  Hi, I'm looking for a 1BR rental in JVC around 75k. Planning to move in the next 2 months. Just exploring options for now.
+                  <div class="wa-time">10:21</div>
+                </div>
+                <div class="wa-typing">KeySync is typing…</div>
+                <div class="wa-bubble wa-bubble-ai">
+                  Hi there! Thanks for reaching out. JVC is a great choice, especially for young professionals...
+                  <div class="wa-time">10:22 ✓✓</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="customer-right">
+            <div class="customer-metrics">
+              <h2>Channel & Response</h2>
+              <p class="panel-subtitle">
+                How the client experiences KeySync, regardless of channel.
+              </p>
+
+              <div class="channel-tabs">
+                <div class="channel-tab channel-active">WhatsApp</div>
+                <div class="channel-tab">Email</div>
+                <div class="channel-tab">Portal</div>
+              </div>
+
+              <div class="customer-kpis">
+                <div class="customer-kpi">
+                  <div class="kpi-label">Response time</div>
+                  <div class="kpi-value-row">
+                    <span class="kpi-value">0.6s</span>
+                    <span class="kpi-tag kpi-tag-good">vs 5 min human</span>
+                  </div>
+                </div>
+                <div class="customer-kpi">
+                  <div class="kpi-label">Handled by</div>
+                  <div class="kpi-value-row">
+                    <span class="kpi-value">AI</span>
+                    <span class="kpi-tag kpi-tag-neutral">Mid-value lead</span>
+                  </div>
+                </div>
+                <div class="customer-kpi">
+                  <div class="kpi-label">Channel status</div>
+                  <div class="kpi-value-row">
+                    <span class="kpi-value">Delivered</span>
+                    <span class="kpi-tag kpi-tag-good">Read ✓✓</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: Intelligence View (our current console) -->
+      <section id="view-intelligence" class="view">
+        <main class="layout">
+          <!-- LEFT: Lead input -->
+          <section class="panel panel-left">
+            <h2 class="panel-title">New Lead</h2>
+            <p class="panel-subtitle">
+              Paste a real inquiry or use a preset. KeySync will analyse, score
+              and route it.
+            </p>
+
+            <label class="field-label" for="lead-channel">Channel</label>
+            <select id="lead-channel" class="select">
+              <option value="whatsapp">WhatsApp</option>
+              <option value="email">Email</option>
+              <option value="portal">Property Portal</option>
+            </select>
+
+            <label class="field-label" for="lead-text">Lead message</label>
+            <textarea
+              id="lead-text"
+              class="textarea"
+              rows="7"
+              placeholder="Example: Hi, I'm looking for a 1BR rental in JVC around 75k. Planning to move in the next 2 months..."
+            ></textarea>
+
+            <div class="preset-row">
+              <button class="chip" id="btn-preset-rental">
+                <span>🏠</span><span>JVC Rental (AI)</span>
+              </button>
+              <button class="chip" id="btn-preset-investor">
+                <span>📈</span><span>Off-plan Investor (AI)</span>
+              </button>
+              <button class="chip" id="btn-preset-luxury">
+                <span>💎</span><span>Palm Luxury Buyer (Human)</span>
+              </button>
+            </div>
+
+            <button id="send-btn" class="primary-btn">
+              ▶ Run KeySync Analysis
+            </button>
+
+            <p id="status-message" class="status-message"></p>
+
+            <div class="note-card">
+              <div class="note-title">Routing logic</div>
+              <p>
+                • Mid-value leads → AI handles with Dubai-trained personas.<br />
+                • High-value leads → Escalated instantly to a human closer.
+              </p>
+            </div>
+          </section>
+
+          <!-- CENTER: Conversation preview -->
+          <section class="panel panel-center">
+            <h2 class="panel-title">Conversation Preview</h2>
+            <p class="panel-subtitle">
+              How the client and KeySync would see this interaction.
+            </p>
+
+            <div class="chat-window">
+              <div class="chat-bubble chat-client">
+                <div class="chat-label">Client</div>
+                <p id="client-message">(Waiting for a lead…)</p>
+              </div>
+
+              <div class="chat-bubble chat-ai">
+                <div class="chat-label">KeySync AI</div>
+                <p id="ai-reply">
+                  KeySync reply will appear here once you run the analysis.
+                </p>
+              </div>
+            </div>
+
+            <div class="timeline-note">
+              <span class="dot"></span>
+              <span>
+                Under the hood: Gemini analyses intent, budget & timeframe →
+                Qdrant injects Dubai-specific context → persona replies in brand
+                tone.
+              </span>
+            </div>
+          </section>
+
+          <!-- RIGHT: AI insights -->
+          <section class="panel panel-right">
+            <h2 class="panel-title">AI Insights</h2>
+            <p class="panel-subtitle">
+              What KeySync understood and how it routes the lead.
+            </p>
+
+            <!-- Lead score & routing -->
+            <div class="card">
+              <div class="card-header">
+                <span>Lead Score & Routing</span>
+              </div>
+              <div class="card-body">
+                <div class="score-row">
+                  <div>
+                    <div class="score-label">Lead Score</div>
+                    <div id="lead-score" class="score-value">–</div>
+                  </div>
+                  <div>
+                    <div class="score-label">Priority</div>
+                    <div id="lead-priority" class="pill pill-muted">–</div>
+                  </div>
+                  <div>
+                    <div class="score-label">Handling</div>
+                    <div id="handling-mode" class="pill pill-muted">–</div>
+                  </div>
+                </div>
+                <div class="metrics-grid">
+                  <div class="metric">
+                    <div class="metric-label">Intent</div>
+                    <div id="metric-intent" class="metric-value">–</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Area</div>
+                    <div id="metric-area" class="metric-value">–</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Budget (AED)</div>
+                    <div id="metric-budget" class="metric-value">–</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Timeframe</div>
+                    <div id="metric-timeframe" class="metric-value">–</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Client Type</div>
+                    <div id="metric-client-type" class="metric-value">–</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Language</div>
+                    <div id="metric-language" class="metric-value">–</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Persona -->
+            <div class="card">
+              <div class="card-header">
+                <span>Assigned Dubai Specialist</span>
+              </div>
+              <div class="card-body persona-card">
+                <div>
+                  <div id="persona-name" class="persona-name">–</div>
+                  <div id="persona-specialty" class="persona-specialty">–</div>
+                </div>
+                <div class="persona-meta">
+                  <div class="metric-label">Focus Areas</div>
+                  <div id="persona-areas" class="persona-areas">–</div>
+                  <p id="persona-description" class="persona-description">–</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Qdrant -->
+            <div class="card">
+              <div class="card-header">
+                <span>Knowledge Used (Qdrant)</span>
+              </div>
+              <div class="card-body knowledge-body">
+                <ul id="knowledge-list" class="knowledge-list">
+                  <li class="knowledge-empty">
+                    No snippets yet. Run an analysis with a lead to see what
+                    KeySync pulled from the Dubai knowledge base.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </section>
+        </main>
+      </section>
+
+      <!-- VIEW: Customer View -->
+      <section id="view-customer" class="view">
+        <div class="inbox-panel">
+          <div class="inbox-header">
+            <div>
+              <h2>Lead Inbox</h2>
+              <p class="panel-subtitle">
+                Snapshot of how KeySync is handling traffic across channels.
+              </p>
+            </div>
+            <span class="inbox-badge">Demo data</span>
+          </div>
+
+          <div class="inbox-list">
+            <div class="inbox-item inbox-ai">
+              <div class="inbox-main">
+                <div class="inbox-title">JVC 1BR rental · 75k</div>
+                <div class="inbox-meta">
+                  WhatsApp · mid-value · intent: rent
+                </div>
+              </div>
+              <div class="inbox-tags">
+                <span class="pill pill-ai">AI handled</span>
+                <span class="pill pill-low">Score 6</span>
+              </div>
+            </div>
+
+            <div class="inbox-item inbox-human">
+              <div class="inbox-main">
+                <div class="inbox-title">Palm Jumeirah villa · 10M AED</div>
+                <div class="inbox-meta">
+                  Email · high-value · intent: buy
+                </div>
+              </div>
+              <div class="inbox-tags">
+                <span class="pill pill-human">Escalated to human</span>
+                <span class="pill pill-high">Score 9</span>
+              </div>
+            </div>
+
+            <div class="inbox-item inbox-ai">
+              <div class="inbox-main">
+                <div class="inbox-title">Dubai Creek off-plan · 1.8M</div>
+                <div class="inbox-meta">Portal · investor · ROI-focused</div>
+              </div>
+              <div class="inbox-tags">
+                <span class="pill pill-ai">AI handled</span>
+                <span class="pill pill-medium">Score 7</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Additional Views (AI Brain remains as is) -->
+      <section id="view-brain" class="view">
+        <div class="brain-panel">
+          <h2>AI Brain · How KeySync thinks</h2>
+          <p class="panel-subtitle">
+            A single brain orchestrating Gemini, Qdrant and lead scoring for
+            Dubai brokerages.
+          </p>
+
+          <div class="brain-flow">
+            <div class="brain-step">
+              <h3>1. Capture</h3>
+              <p>
+                Leads arrive from WhatsApp, email or portals. KeySync
+                normalises the text, strips signatures and noise, and tags the
+                channel.
+              </p>
+            </div>
+            <div class="brain-step">
+              <h3>2. Understand (Gemini)</h3>
+              <p>
+                Gemini analyses intent (rent / buy), budget, timeframe, location
+                hints and whether it's an end-user or investor. We convert this
+                into a structured lead profile.
+              </p>
+            </div>
+            <div class="brain-step">
+              <h3>3. Recall (Qdrant)</h3>
+              <p>
+                The profile is embedded and used to query Qdrant for
+                Dubai-specific snippets: areas, personas, FAQs, and brokerage
+                playbook rules.
+              </p>
+            </div>
+            <div class="brain-step">
+              <h3>4. Decide & Route</h3>
+              <p>
+                A scoring layer decides whether AI should reply or escalate to a
+                broker. The reply is persona-aware and cites the snippets used.
+              </p>
+            </div>
+          </div>
+
+          <div class="brain-note">
+            <div class="note-title">Why this matters</div>
+            <p>
+              Judges & investors see that KeySync isn't “just a chatbot” – it's
+              a triage layer that protects high-value deals while compressing
+              response time for the rest to seconds.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="app-footer">
+        <span>KeySync Lite · Built in 48 hours for AI Genesis Hackathon</span>
+        <span>Designed to plug directly into WhatsApp, email & CRM flows.</span>
+      </footer>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
