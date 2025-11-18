@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import WhatsAppDemo from './pages/WhatsAppDemo';
 import GmailDemo from './pages/GmailDemo';
 import BackendProcess from './pages/BackendProcess';
+import FutureVision from './pages/FutureVision';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/whatsapp" element={<WhatsAppDemo />} />
           <Route path="/gmail" element={<GmailDemo />} />
           <Route path="/backend" element={<BackendProcess />} />
+          <Route path="/vision" element={<FutureVision />} />
         </Routes>
       </AppShell>
     </BrowserRouter>

@@ -3,7 +3,7 @@ import AiPipelinePanel from '../components/AiPipelinePanel';
 import PropertyCard from '../components/PropertyCard';
 import type { LeadResponse } from '../types';
 import { analyzeLead, type ApiError } from '../api/leadAnalysis';
-import { FaBold, FaItalic, FaUnderline, FaListUl, FaAlignLeft, FaTrash } from 'react-icons/fa';
+import { FaBold, FaItalic, FaUnderline, FaListUl, FaAlignLeft, FaTrash, FaInfoCircle } from 'react-icons/fa';
 
 interface Email {
   id: string;
@@ -77,9 +77,25 @@ export default function GmailDemo() {
   };
 
   return (
-    <div className="flex h-full bg-[#0a0a0a]">
-      {/* Left Panel - Gmail Interface */}
-      <div className="w-full lg:w-1/2 flex-shrink-0 flex flex-col border-r border-gray-800">
+    <div className="flex flex-col h-full bg-[#0a0a0a]">
+          {/* Customer POV Notice */}
+          <div className="bg-blue-500/20 border-b border-blue-500/30 px-6 py-4">
+            <div className="flex items-start gap-3">
+              <FaInfoCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-blue-300 font-semibold text-sm mb-1">Customer Point of View (POV)</p>
+                <p className="text-gray-400 text-xs leading-relaxed">
+                  This section simulates the <strong className="text-gray-300">customer's perspective</strong> - showing how clients interact with KeySync Lite's AI agent via email. 
+                  This is <strong className="text-gray-300">not part of the internal product dashboard</strong>, but rather demonstrates the end-user experience 
+                  when customers send email inquiries and receive AI-powered automatic replies. This view helps showcase the professional, intelligent email responses our AI provides to real estate leads.
+                </p>
+              </div>
+            </div>
+          </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Panel - Gmail Interface */}
+        <div className="w-full lg:w-1/2 flex-shrink-0 flex flex-col border-r border-gray-800">
         {/* Gmail Header */}
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4">
           <div className="flex items-center gap-4">
@@ -146,10 +162,10 @@ export default function GmailDemo() {
             </div>
           )}
         </div>
-      </div>
+        </div>
 
-      {/* Right Panel - Email View + Intelligence */}
-      <div className="w-full lg:w-1/2 flex-shrink-0 flex flex-col">
+        {/* Right Panel - Email View + Intelligence */}
+        <div className="w-full lg:w-1/2 flex-shrink-0 flex flex-col">
         {selectedEmail ? (
           <>
             {/* Email Detail View */}
@@ -208,6 +224,7 @@ export default function GmailDemo() {
             <p>Select an email to view details and intelligence analysis</p>
           </div>
         )}
+        </div>
       </div>
 
       {/* Compose Modal */}
@@ -342,7 +359,7 @@ export default function GmailDemo() {
             </div>
           </div>
         </div>
-      )}
+        )}
     </div>
   );
 }

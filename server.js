@@ -328,7 +328,7 @@ function generateBasicReply(analysis, persona) {
 }
 
 // --- AI reply generator using Gemini + Qdrant context + Properties ---
-async function generateReplyAI(analysis, persona, qdrantSnippets, recommendedProperties = []) {
+async function generateReplyAI(analysis, persona, qdrantSnippets, recommendedProperties = [], userRequestedProperties = false) {
   try {
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
 
@@ -338,13 +338,20 @@ async function generateReplyAI(analysis, persona, qdrantSnippets, recommendedPro
         .join("\n");
 
     // Format properties for the prompt
-    const propertiesText = recommendedProperties.length > 0
-      ? recommendedProperties
+    let propertiesText;
+    if (userRequestedProperties) {
+      if (recommendedProperties.length > 0) {
+        propertiesText = recommendedProperties
           .map((p, idx) => 
             `Property ${idx + 1}: ${p.title} in ${p.area}. ${p.bedrooms} bedrooms. Price: ${p.price.toLocaleString()} ${p.currency}. ${p.description}`
           )
-          .join("\n")
-      : "(no properties available)";
+          .join("\n");
+      } else {
+        propertiesText = "(User asked for properties but none matched their criteria - apologize and offer to help find alternatives)";
+      }
+    } else {
+      propertiesText = "(User did NOT request properties - do NOT mention any properties in your reply. Keep it conversational and helpful.)";
+    }
 
     const prompt = `
 You are ${persona.name}, a ${persona.specialty} at a Dubai real estate brokerage.
@@ -358,7 +365,9 @@ Constraints:
 - If you are not sure about something, say you'll confirm details instead of guessing.
 - Keep the tone aligned with this persona: ${persona.description}
 - Focus on being helpful, asking 1–2 smart follow-up questions, and inviting the client to continue.
-- If properties are available, naturally mention them in your reply (e.g., "I have a few options in ${analysis.area || 'that area'} that might interest you...").
+- IMPORTANT: Only mention or show properties if the user explicitly asked for them (photos, listings, options, etc.).
+- If the user did NOT ask for properties, keep your reply conversational and helpful without mentioning specific properties.
+- If properties are available AND the user asked for them, naturally mention them in your reply (e.g., "I have a few options in ${analysis.area || 'that area'} that might interest you...").
 - Do NOT paste image URLs or property IDs. Just refer to properties naturally in your text.
 
 Lead analysis (JSON):
@@ -555,6 +564,42 @@ async function getKnowledgeForLead(analysis, persona) {
   }
 }
 
+// --- Check if user is asking for property listings/photos ---
+function isRequestingProperties(text) {
+  if (!text) return false;
+  
+  const lowerText = text.toLowerCase();
+  
+  // Keywords that indicate user wants to see properties/listings/photos
+  const propertyRequestKeywords = [
+    'photo', 'photos', 'picture', 'pictures', 'image', 'images',
+    'show me', 'show', 'send me', 'send', 'share',
+    'listing', 'listings', 'property', 'properties',
+    'option', 'options', 'available', 'availability',
+    'see', 'view', 'look at', 'can i see', 'would like to see',
+    'interested in seeing', 'want to see', 'like to see',
+    'details', 'more information', 'more info', 'tell me more',
+    'what do you have', 'what properties', 'what options',
+    'any properties', 'any options', 'any listings'
+  ];
+  
+  // Check if any keyword is present in the text
+  const hasKeyword = propertyRequestKeywords.some(keyword => 
+    lowerText.includes(keyword)
+  );
+  
+  // Also check for question patterns that might request properties
+  const questionPatterns = [
+    /\b(what|which|where|how many)\s+(properties|listings|options|apartments|villas|houses)/i,
+    /\b(can|could|would)\s+(you|i)\s+(show|see|send|share)/i,
+    /\b(do you have|are there|is there)\s+(any|some)/i
+  ];
+  
+  const hasQuestionPattern = questionPatterns.some(pattern => pattern.test(text));
+  
+  return hasKeyword || hasQuestionPattern;
+}
+
 // --- Property retrieval helper ---
 async function getRecommendedProperties(analysis, text) {
   if (!process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
@@ -696,13 +741,20 @@ app.post("/api/lead", async (req, res) => {
     let qdrantContext = [];
     let recommendedProperties = [];
 
-    // Get recommended properties (for both AI and human-handled leads)
-    try {
-      recommendedProperties = await getRecommendedProperties(analysis, text);
-      console.log("Recommended properties:", recommendedProperties.length);
-    } catch (err) {
-      console.error("Error getting recommended properties:", err);
-      // Continue without properties - not a critical failure
+    // Only get recommended properties if user explicitly asks for them
+    const shouldShowProperties = isRequestingProperties(text);
+    
+    if (shouldShowProperties) {
+      console.log("User is requesting properties/listings - fetching recommendations");
+      try {
+        recommendedProperties = await getRecommendedProperties(analysis, text);
+        console.log("Recommended properties:", recommendedProperties.length);
+      } catch (err) {
+        console.error("Error getting recommended properties:", err);
+        // Continue without properties - not a critical failure
+      }
+    } else {
+      console.log("User query does not request properties - skipping property retrieval");
     }
 
     if (isHighPriority) {
@@ -721,7 +773,7 @@ app.post("/api/lead", async (req, res) => {
       qdrantContext = await getKnowledgeForLead(analysis, safePersona);
 
       // 3b) Generate grounded AI reply using Gemini + Qdrant + Properties
-      reply = await generateReplyAI(analysis, safePersona, qdrantContext, recommendedProperties);
+      reply = await generateReplyAI(analysis, safePersona, qdrantContext, recommendedProperties, shouldShowProperties);
     }
 
     // Attach context into analysis for debugging / UI

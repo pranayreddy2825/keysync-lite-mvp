@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Badge from './ui/Badge';
-import { FaWhatsapp, FaEnvelope, FaSearch } from 'react-icons/fa';
+import { FaWhatsapp, FaEnvelope, FaSearch, FaDownload } from 'react-icons/fa';
 
 interface Lead {
   id: string;
@@ -15,11 +15,12 @@ interface Lead {
 }
 
 interface RecentLeadsListProps {
+  leads?: Lead[];
   onLeadSelect?: (lead: Lead) => void;
 }
 
-// Mock data - in production this would come from an API
-const mockLeads: Lead[] = [
+// Fallback mock data if no leads provided
+const defaultMockLeads: Lead[] = [
   {
     id: '1',
     clientName: 'Ahmed Al Mansoori',
@@ -28,62 +29,18 @@ const mockLeads: Lead[] = [
     leadScore: 6,
     priority: 'medium',
     assignedAgent: 'Priya Varma',
-    lastUpdated: new Date(Date.now() - 5 * 60000), // 5 minutes ago
+    lastUpdated: new Date(Date.now() - 5 * 60000),
     status: 'open',
-  },
-  {
-    id: '2',
-    clientName: 'Sarah Johnson',
-    channel: 'email',
-    messageSnippet: 'Interested in off-plan investment in Dubai Creek Harbour...',
-    leadScore: 7,
-    priority: 'medium',
-    assignedAgent: 'Omar Haddad',
-    lastUpdated: new Date(Date.now() - 15 * 60000), // 15 minutes ago
-    status: 'in-progress',
-  },
-  {
-    id: '3',
-    clientName: 'Mohammed Hassan',
-    channel: 'whatsapp',
-    messageSnippet: 'Looking for villa on Palm Jumeirah around 10M AED...',
-    leadScore: 9,
-    priority: 'high',
-    assignedAgent: 'Sarah Al Mansoori',
-    lastUpdated: new Date(Date.now() - 30 * 60000), // 30 minutes ago
-    status: 'open',
-  },
-  {
-    id: '4',
-    clientName: 'Emma Wilson',
-    channel: 'email',
-    messageSnippet: 'Need 2BR apartment in Dubai Marina, budget 2.5M...',
-    leadScore: 8,
-    priority: 'high',
-    assignedAgent: 'Sarah Al Mansoori',
-    lastUpdated: new Date(Date.now() - 45 * 60000), // 45 minutes ago
-    status: 'in-progress',
-  },
-  {
-    id: '5',
-    clientName: 'David Chen',
-    channel: 'whatsapp',
-    messageSnippet: 'Exploring rental options in Sports City...',
-    leadScore: 5,
-    priority: 'low',
-    assignedAgent: 'Priya Varma',
-    lastUpdated: new Date(Date.now() - 2 * 3600000), // 2 hours ago
-    status: 'closed',
   },
 ];
 
-export default function RecentLeadsList({ onLeadSelect }: RecentLeadsListProps) {
+export default function RecentLeadsList({ leads = defaultMockLeads, onLeadSelect }: RecentLeadsListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterChannel, setFilterChannel] = useState<'all' | 'whatsapp' | 'email' | 'portal'>('all');
   const [filterPriority, setFilterPriority] = useState<'all' | 'low' | 'medium' | 'high'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'open' | 'closed' | 'in-progress'>('all');
 
-  const filteredLeads = mockLeads.filter((lead) => {
+  const filteredLeads = leads.filter((lead) => {
     const matchesSearch =
       lead.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       lead.messageSnippet.toLowerCase().includes(searchQuery.toLowerCase());
@@ -140,10 +97,18 @@ export default function RecentLeadsList({ onLeadSelect }: RecentLeadsListProps) 
   };
 
   return (
-    <div className="bg-[#111111] border border-gray-800 rounded-xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">Recent Leads</h3>
-        <span className="text-sm text-gray-400">{filteredLeads.length} leads</span>
+    <div className="bg-gradient-to-br from-[#1e293b] to-[#1e293b]/80 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-1">Recent Leads</h3>
+          <p className="text-gray-400 text-xs">{filteredLeads.length} leads found</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="px-3 py-1.5 bg-gray-700/30 border border-gray-600/50 rounded-lg text-white text-sm hover:bg-gray-700/50 transition-colors flex items-center gap-2">
+            <FaDownload className="w-3 h-3" />
+            <span>Export</span>
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -155,7 +120,7 @@ export default function RecentLeadsList({ onLeadSelect }: RecentLeadsListProps) 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name or message..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50"
+            className="w-full pl-10 pr-4 py-2 bg-gray-700/30 border border-gray-600/50 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
           />
         </div>
       </div>
@@ -165,7 +130,7 @@ export default function RecentLeadsList({ onLeadSelect }: RecentLeadsListProps) 
         <select
           value={filterChannel}
           onChange={(e) => setFilterChannel(e.target.value as any)}
-          className="px-3 py-1.5 bg-gray-800/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+          className="px-3 py-1.5 bg-gray-700/30 border border-gray-600/50 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
         >
           <option value="all">All Channels</option>
           <option value="whatsapp">WhatsApp</option>
@@ -175,7 +140,7 @@ export default function RecentLeadsList({ onLeadSelect }: RecentLeadsListProps) 
         <select
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value as any)}
-          className="px-3 py-1.5 bg-gray-800/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+          className="px-3 py-1.5 bg-gray-700/30 border border-gray-600/50 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
         >
           <option value="all">All Priorities</option>
           <option value="high">High</option>
@@ -185,7 +150,7 @@ export default function RecentLeadsList({ onLeadSelect }: RecentLeadsListProps) 
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as any)}
-          className="px-3 py-1.5 bg-gray-800/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+          className="px-3 py-1.5 bg-gray-700/30 border border-gray-600/50 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
         >
           <option value="all">All Status</option>
           <option value="open">Open</option>
@@ -194,41 +159,72 @@ export default function RecentLeadsList({ onLeadSelect }: RecentLeadsListProps) 
         </select>
       </div>
 
-      {/* Leads List */}
-      <div className="space-y-2 max-h-96 overflow-y-auto">
-        {filteredLeads.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 text-sm">No leads found matching your filters</div>
-        ) : (
-          filteredLeads.map((lead) => (
-            <div
-              key={lead.id}
-              onClick={() => onLeadSelect?.(lead)}
-              className="p-4 bg-gray-800/30 border border-gray-700 rounded-lg hover:bg-gray-800/50 hover:border-gray-600 cursor-pointer transition-all"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {getChannelIcon(lead.channel)}
-                  <span className="text-white font-medium text-sm">{lead.clientName}</span>
-                </div>
-                <span className="text-xs text-gray-500">{formatTimeAgo(lead.lastUpdated)}</span>
+      {/* Leads List - Enhanced Table Style */}
+      <div className="overflow-x-auto">
+        <div className="min-w-full">
+          {/* Table Header */}
+          <div className="grid grid-cols-12 gap-4 pb-3 mb-3 border-b border-gray-700/50 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <div className="col-span-3">Client</div>
+            <div className="col-span-2">Channel</div>
+            <div className="col-span-3">Message</div>
+            <div className="col-span-1">Score</div>
+            <div className="col-span-1">Priority</div>
+            <div className="col-span-1">Status</div>
+            <div className="col-span-1">Time</div>
+          </div>
+          
+          {/* Table Body */}
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {filteredLeads.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 text-sm">
+                <div className="mb-2">No leads found matching your filters</div>
+                <div className="text-xs text-gray-600">Try adjusting your search or filters</div>
               </div>
-              <p className="text-gray-400 text-sm mb-3 line-clamp-2">{lead.messageSnippet}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Badge variant={getPriorityVariant(lead.priority)} size="sm">
-                    Score: {lead.leadScore}/10
-                  </Badge>
-                  <Badge variant="default" size="sm" className={getStatusColor(lead.status)}>
-                    {lead.status}
-                  </Badge>
+            ) : (
+              filteredLeads.map((lead) => (
+                <div
+                  key={lead.id}
+                  onClick={() => onLeadSelect?.(lead)}
+                  className="grid grid-cols-12 gap-4 p-4 bg-gray-800/20 border border-gray-700/30 rounded-xl hover:bg-gray-800/40 hover:border-gray-600/50 cursor-pointer transition-all group"
+                >
+                  <div className="col-span-3 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                      {lead.clientName.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-white font-medium text-sm truncate">{lead.clientName}</span>
+                  </div>
+                  <div className="col-span-2 flex items-center">
+                    <div className="flex items-center gap-2">
+                      {getChannelIcon(lead.channel)}
+                      <span className="text-gray-300 text-xs capitalize">{lead.channel}</span>
+                    </div>
+                  </div>
+                  <div className="col-span-3">
+                    <p className="text-gray-400 text-sm line-clamp-1 group-hover:text-gray-300 transition-colors">{lead.messageSnippet}</p>
+                  </div>
+                  <div className="col-span-1 flex items-center">
+                    <Badge variant={getPriorityVariant(lead.priority)} size="sm">
+                      {lead.leadScore}/10
+                    </Badge>
+                  </div>
+                  <div className="col-span-1 flex items-center">
+                    <Badge variant={getPriorityVariant(lead.priority)} size="sm">
+                      {lead.priority}
+                    </Badge>
+                  </div>
+                  <div className="col-span-1 flex items-center">
+                    <Badge variant="default" size="sm" className={getStatusColor(lead.status)}>
+                      {lead.status}
+                    </Badge>
+                  </div>
+                  <div className="col-span-1 flex items-center">
+                    <span className="text-xs text-gray-500">{formatTimeAgo(lead.lastUpdated)}</span>
+                  </div>
                 </div>
-                {lead.assignedAgent && (
-                  <span className="text-xs text-gray-400">{lead.assignedAgent}</span>
-                )}
-              </div>
-            </div>
-          ))
-        )}
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
