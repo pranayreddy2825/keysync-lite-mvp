@@ -648,6 +648,20 @@ async function getRecommendedProperties(analysis, text) {
     // Embed query text
     const queryVector = await embedText(queryText);
 
+    // First, check if properties collection exists
+    try {
+      const collections = await qdrantClient.getCollections();
+      const hasPropertiesCollection = collections.collections.some(c => c.name === "properties");
+      
+      if (!hasPropertiesCollection) {
+        console.error("❌ Properties collection does not exist in Qdrant!");
+        console.log("Available collections:", collections.collections.map(c => c.name));
+        return [];
+      }
+    } catch (err) {
+      console.error("Error checking collections:", err);
+    }
+
     // Search properties collection - increase limit to 5 for better results
     const searchResult = await qdrantClient.search("properties", {
       vector: queryVector,
@@ -658,6 +672,11 @@ async function getRecommendedProperties(analysis, text) {
     });
 
     console.log("Property search returned", searchResult.length, "properties");
+    if (searchResult.length > 0) {
+      console.log("✅ Top match score:", searchResult[0].score);
+    } else {
+      console.warn("⚠️ No properties found - collection might be empty or query doesn't match");
+    }
     
     // If no results, try a more generic search
     if (searchResult.length === 0) {
@@ -719,6 +738,62 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", message: "KeySync Lite backend is running" });
+});
+
+// Diagnostic endpoint to check Qdrant collections
+app.get("/api/debug/qdrant", async (req, res) => {
+  try {
+    if (!process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
+      return res.json({ 
+        error: "Qdrant env vars not set",
+        QDRANT_URL: process.env.QDRANT_URL ? "Set" : "Not set",
+        QDRANT_API_KEY: process.env.QDRANT_API_KEY ? "Set" : "Not set"
+      });
+    }
+
+    const collections = await qdrantClient.getCollections();
+    const collectionNames = collections.collections.map(c => c.name);
+    
+    // Check if properties collection exists and has data
+    let propertiesCount = 0;
+    let knowledgeCount = 0;
+    
+    if (collectionNames.includes("properties")) {
+      try {
+        const propsInfo = await qdrantClient.getCollection("properties");
+        propertiesCount = propsInfo.points_count || 0;
+      } catch (err) {
+        console.error("Error getting properties collection:", err);
+      }
+    }
+    
+    if (collectionNames.includes("keysync_knowledge")) {
+      try {
+        const knowledgeInfo = await qdrantClient.getCollection("keysync_knowledge");
+        knowledgeCount = knowledgeInfo.points_count || 0;
+      } catch (err) {
+        console.error("Error getting knowledge collection:", err);
+      }
+    }
+
+    return res.json({
+      status: "ok",
+      collections: collectionNames,
+      properties: {
+        exists: collectionNames.includes("properties"),
+        count: propertiesCount
+      },
+      knowledge: {
+        exists: collectionNames.includes("keysync_knowledge"),
+        count: knowledgeCount
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ 
+      error: "Qdrant check failed", 
+      details: err.message
+    });
+  }
 });
 
 // --- Simple Gemini test route ---
