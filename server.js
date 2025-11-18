@@ -811,9 +811,15 @@ app.post("/api/lead", async (req, res) => {
 });
 
 // --- Start server ---
-app.listen(PORT, () => {
-  console.log(`KeySync Lite server running on http://localhost:${PORT}`);
-  // Init Qdrant collection in background
-  ensureKnowledgeCollection();
-});
+// Export app for Vercel serverless functions
+module.exports = app;
+
+// Only listen if running locally (not on Vercel)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`KeySync Lite server running on http://localhost:${PORT}`);
+    // Init Qdrant collection in background
+    ensureKnowledgeCollection();
+  });
+}
 
