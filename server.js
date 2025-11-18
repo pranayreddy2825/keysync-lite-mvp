@@ -568,7 +568,7 @@ async function getKnowledgeForLead(analysis, persona) {
 function isRequestingProperties(text) {
   if (!text) return false;
   
-  const lowerText = text.toLowerCase();
+  const lowerText = text.toLowerCase().trim();
   
   // Keywords that indicate user wants to see properties/listings/photos
   const propertyRequestKeywords = [
@@ -580,7 +580,8 @@ function isRequestingProperties(text) {
     'interested in seeing', 'want to see', 'like to see',
     'details', 'more information', 'more info', 'tell me more',
     'what do you have', 'what properties', 'what options',
-    'any properties', 'any options', 'any listings'
+    'any properties', 'any options', 'any listings',
+    'have available', 'have', 'got', 'got any'
   ];
   
   // Check if any keyword is present in the text
@@ -592,12 +593,18 @@ function isRequestingProperties(text) {
   const questionPatterns = [
     /\b(what|which|where|how many)\s+(properties|listings|options|apartments|villas|houses)/i,
     /\b(can|could|would)\s+(you|i)\s+(show|see|send|share)/i,
-    /\b(do you have|are there|is there)\s+(any|some)/i
+    /\b(do you have|are there|is there)\s+(any|some)/i,
+    /show\s+me\s+(the\s+)?(listing|listings|images|photos|properties|options)/i,
+    /(can|could|would)\s+you\s+show\s+(me\s+)?(some|any|the)/i
   ];
   
   const hasQuestionPattern = questionPatterns.some(pattern => pattern.test(text));
   
-  return hasKeyword || hasQuestionPattern;
+  // Additional check: if text contains "image" or "listing" with "show" or "see"
+  const hasImageListingRequest = /(show|see|send|share).*?(image|listing|photo|property)/i.test(text) ||
+                                  /(image|listing|photo|property).*?(show|see|send|share)/i.test(text);
+  
+  return hasKeyword || hasQuestionPattern || hasImageListingRequest;
 }
 
 // --- Property retrieval helper ---
@@ -610,7 +617,11 @@ async function getRecommendedProperties(analysis, text) {
   try {
     // Build query text from lead message and analysis
     const parts = [];
-    if (analysis.area && analysis.area !== "Unknown") {
+    
+    // Always include "Dubai" as base location
+    parts.push("Dubai");
+    
+    if (analysis.area && analysis.area !== "Unknown" && analysis.area !== "unknown") {
       parts.push(analysis.area);
     }
     if (analysis.intent) {
@@ -620,27 +631,64 @@ async function getRecommendedProperties(analysis, text) {
       const budgetM = (analysis.budget / 1000000).toFixed(1);
       parts.push(`budget ${budgetM}M AED`);
     }
+    
+    // Include original text for better matching (limit to first 150 chars)
     if (text) {
-      // Include original text for better matching
-      parts.push(text.substring(0, 100));
+      const textSnippet = text.substring(0, 150).trim();
+      if (textSnippet) {
+        parts.push(textSnippet);
+      }
     }
 
-    const queryText = parts.join(". ") || "Dubai property";
+    // Fallback to generic Dubai property query if no parts
+    const queryText = parts.length > 0 ? parts.join(". ") : "Dubai property apartment villa";
 
     console.log("Property query text:", queryText);
 
     // Embed query text
     const queryVector = await embedText(queryText);
 
-    // Search properties collection
+    // Search properties collection - increase limit to 5 for better results
     const searchResult = await qdrantClient.search("properties", {
       vector: queryVector,
-      limit: 3,
+      limit: 5,
       with_payload: true,
-      with_vectors: false
+      with_vectors: false,
+      score_threshold: 0.3  // Lower threshold to get more results even with partial matches
     });
 
     console.log("Property search returned", searchResult.length, "properties");
+    
+    // If no results, try a more generic search
+    if (searchResult.length === 0) {
+      console.log("No properties found with specific query, trying generic Dubai property search");
+      const genericQuery = "Dubai property apartment villa";
+      const genericVector = await embedText(genericQuery);
+      const genericResult = await qdrantClient.search("properties", {
+        vector: genericVector,
+        limit: 3,
+        with_payload: true,
+        with_vectors: false
+      });
+      console.log("Generic search returned", genericResult.length, "properties");
+      if (genericResult.length > 0) {
+        // Use generic results
+        const properties = genericResult.map((pt) => {
+          const payload = pt.payload || {};
+          return {
+            id: payload.id,
+            title: payload.title,
+            description: payload.description,
+            area: payload.area,
+            bedrooms: payload.bedrooms,
+            price: payload.price,
+            currency: payload.currency || "AED",
+            images: payload.images || []
+          };
+        });
+        return properties;
+      }
+    }
 
     // Map to Property format
     const properties = (searchResult || []).map((pt) => {
