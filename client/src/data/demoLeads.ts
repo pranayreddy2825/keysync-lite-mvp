@@ -19,7 +19,6 @@ export type LeadForList = Omit<DemoLead, 'team'> & { assignedAgent?: string };
 const now = Date.now();
 const oneHour = 60 * 60 * 1000;
 const oneDay = 24 * 60 * 60 * 1000;
-const oneWeek = 7 * 24 * 60 * 60 * 1000;
 
 export const demoLeads: DemoLead[] = [
   // Today's leads

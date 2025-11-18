@@ -26,13 +26,6 @@ export default function Dashboard() {
   // Calculate stats from filtered leads (before removing team field)
   const stats = useMemo(() => calculateStats(filteredLeadsForStats), [filteredLeadsForStats]);
 
-  // Calculate progress percentages for visual bars
-  const totalLeadsProgress = stats.totalLeads > 0 ? Math.min(95, Math.floor((stats.totalLeads / 20) * 100)) : 0;
-  const automationProgress = 87; // Fixed automation rate
-  const responseProgress = 60; // Fixed response time
-  // Keep high priority below 25% to show AI handles most leads
-  const priorityProgress = stats.totalLeads > 0 ? Math.min(25, Math.floor((stats.highPriority / stats.totalLeads) * 100)) : 0;
-
   // Calculate percentage changes (mock data for trends)
   const percentageChanges = {
     totalLeads: 12.5,
