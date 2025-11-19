@@ -423,6 +423,97 @@ By treating Qdrant as the **brain** of the system rather than a simple vector in
 
 ---
 
+## 🎭 Agent Training & Conversation Design
+
+KeySync Lite's three AI agents are not generic chatbots – they are **psychologically-aware sales specialists** trained to talk like top-performing real estate agents and systematically upgrade low-quality leads into highly qualified briefs.
+
+### Agent Architecture
+
+Each agent uses a **layered prompt system**:
+
+1. **Base System Prompt** (shared by all agents)
+   - Natural, conversational WhatsApp style
+   - Lead qualification framework: acknowledge → insight → 2-3 questions
+   - Safety guidelines and brand protection
+   - No technical jargon, no robotic phrases
+
+2. **Persona-Specific Prompt** (unique per agent)
+   - **Sarah**: Luxury specialist with polished, concierge-style tone
+   - **Priya**: Rental specialist with friendly, practical, empathetic approach
+   - **Omar**: Investment advisor with strategic, numbers-aware, professional tone
+
+3. **Conversation Context** (dynamic per message)
+   - First message introduction logic
+   - Property request handling
+   - Lead analysis and Qdrant knowledge context
+
+4. **Lead Upgrade Rules** (applied to every reply)
+   - Structured 3-step pattern for consistent qualification
+   - WhatsApp formatting guidelines (2-4 paragraphs, no bullets)
+
+### Lead Upgrade Strategy
+
+Every agent reply follows this pattern to upgrade vague leads:
+
+1. **Acknowledge** what the client just said
+   - Shows active listening
+   - Validates their inquiry
+
+2. **Add one helpful insight or reassurance**
+   - Uses Qdrant knowledge snippets about Dubai/areas
+   - Builds trust and demonstrates expertise
+   - Makes the client feel understood
+
+3. **Ask 2-3 specific, natural questions**
+   - Budget range
+   - Preferred areas
+   - Timeframe
+   - Purpose (buy/rent/invest)
+   - Never interrogates – questions flow naturally in conversation
+
+### Example: Lead Upgrade in Action
+
+**Vague Lead:**
+> "Hi, I'm moving to Dubai and need a place"
+
+**Agent Response (Priya):**
+> "Hi, I'm Priya Varma from KeySync Lite. Thanks for reaching out!
+>
+> Moving to Dubai is exciting! I've helped hundreds of families and professionals find their perfect home here, so I know it can feel overwhelming at first.
+>
+> To help me find the best options for you, could you tell me roughly what monthly budget you're thinking, and when you're planning to move? Also, are you looking to rent or buy?"
+
+**Result:** A vague inquiry becomes a qualified lead with budget, timeframe, and intent clarified.
+
+### Persona Selection Logic
+
+Agents are selected using a **two-stage process**:
+
+1. **Baseline Rules** (immediate selection)
+   - Rent intent → Priya
+   - Investment/off-plan keywords → Omar
+   - Luxury areas (Palm, Downtown, Marina) → Sarah
+   - High budgets → Sarah
+
+2. **Qdrant Memory Enhancement** (adaptive optimization)
+   - Query `lead_memory` for similar past leads
+   - Calculate conversion rates per persona
+   - Override baseline if a different persona has significantly better conversion (requires ≥3 similar leads with data)
+   - Visible in AI Pipeline UI as "Memory-Optimized" vs "Baseline Rules"
+
+This dual approach ensures both **immediate intelligence** (rules) and **continuous improvement** (memory).
+
+### Conversation Quality Features
+
+- **First Message Introduction**: Agents introduce themselves naturally on first contact
+- **No Re-Introduction**: Follow-up messages continue conversation without repeating introductions
+- **Natural Language**: Uses contractions, short paragraphs, conversational flow
+- **No Bullets or Lists**: WhatsApp-style formatting, not email-style
+- **Property Mentions**: Only when explicitly requested (strict detection patterns)
+- **Transparent Learning**: AI Pipeline UI shows similar leads and how Qdrant influenced decisions
+
+---
+
 ## 🚀 Setup Guide
 
 ### Prerequisites
