@@ -3,6 +3,7 @@ import type { LeadResponse } from '../types';
 export interface AnalyzeLeadOptions {
   channel: 'whatsapp' | 'email' | 'portal';
   text: string;
+  isFirstMessage?: boolean;
 }
 
 export interface ApiError {
@@ -47,7 +48,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
  * @throws {ApiError} If the API request fails
  */
 export async function analyzeLead(options: AnalyzeLeadOptions): Promise<LeadResponse> {
-  const { channel, text } = options;
+  const { channel, text, isFirstMessage } = options;
 
   if (!text.trim()) {
     throw {
@@ -64,6 +65,7 @@ export async function analyzeLead(options: AnalyzeLeadOptions): Promise<LeadResp
       body: JSON.stringify({
         channel,
         text: text.trim(),
+        isFirstMessage: isFirstMessage !== undefined ? isFirstMessage : true,
       }),
     });
 

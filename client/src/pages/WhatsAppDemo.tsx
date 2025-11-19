@@ -24,9 +24,13 @@ export default function WhatsAppDemo() {
     setLastInputText(text);
 
     try {
+      // Check if this is the first message (no AI messages yet)
+      const isFirstMessage = messages.filter(m => m.sender === 'ai').length === 0;
+      
       const data = await analyzeLead({
         channel: 'whatsapp',
         text,
+        isFirstMessage,
       });
 
       setIntelligenceData(data);

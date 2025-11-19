@@ -45,9 +45,11 @@ export default function GmailDemo() {
     setLastInputText(composeBody);
 
     try {
+      // For email, treat each new email as potentially first (no conversation history tracking yet)
       const data = await analyzeLead({
         channel: 'email',
         text: composeBody,
+        isFirstMessage: true, // Email replies are typically first-time interactions
       });
 
       setIntelligenceData(data);

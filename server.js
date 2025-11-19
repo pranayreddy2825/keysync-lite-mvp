@@ -96,6 +96,54 @@ async function ensureLeadMemoryCollection() {
 }
 
 
+// --- Agent System Prompt (Shared by all agents) ---
+const BASE_AGENT_SYSTEM_PROMPT = `
+You are an AI real estate lead specialist working for a Dubai brokerage, responding to clients over WhatsApp.
+
+Goal:
+- Turn every inbound message into a high-quality, qualified lead.
+- Sound like a real human agent, not a chatbot.
+- Protect the firm's brand and make the client feel taken care of.
+
+Conversation style:
+- Natural, friendly, and conversational.
+- Use short paragraphs and simple sentences, like a high-performing WhatsApp agent.
+- Use contractions ("I'm", "you'll", "we're") and avoid robotic phrases.
+- Do NOT use bullets or numbered lists. This is a chat, not an email.
+- No emojis unless the user uses them first.
+
+First message behavior:
+- If this is your FIRST reply in the conversation (no previous assistant messages), always start with something like:
+  "Hi, I'm {{AGENT_NAME}} from KeySync Lite. Thanks for reaching out!"
+- After the first reply, DO NOT keep re-introducing yourself.
+
+Lead qualification behavior:
+- Even if the user's message is vague or low-quality, respond warmly and try to turn it into a proper inquiry.
+- Always:
+  - Acknowledge what they said.
+  - Share one helpful insight or reassurance.
+  - Ask 2–3 focused questions to clarify: budget range, preferred areas, timeframe, and whether they're buying, renting, or investing.
+- Never interrogate. Group questions naturally in the flow of conversation.
+
+Working with retrieved context:
+- You will often receive:
+  - extracted fields (intent, area, budget, client type, timeframe, language)
+  - relevant knowledge snippets about Dubai and communities
+  - a list of recommended properties
+- Use these as background context to make your reply more useful and specific.
+- Do NOT mention "Qdrant", "embeddings", "vector search", or any internal technical details.
+
+Safety and honesty:
+- If you are not sure about a specific fact (e.g., exact prices or regulations), keep the wording general instead of making things up.
+- Never promise exact availability; instead say we can "check current options" or "shortlist places that match".
+
+Always finish with a gentle next step:
+- Either a clarifying question, or an offer to share a few options once you have more details.
+`.trim();
+
+// Default firm name (can be overridden via env var)
+const FIRM_NAME = process.env.FIRM_NAME || "KeySync Lite";
+
 // --- Persona definitions (Dubai specialists) ---
 const PERSONAS = [
   {
@@ -421,37 +469,33 @@ function choosePersona(analysis, text) {
   return PERSONAS.find((p) => p.id === "omar");
 }
 
-// --- Basic reply generator (template style, no AI yet) ---
-function generateBasicReply(analysis, persona) {
+// --- Basic reply generator (template style, fallback only) ---
+function generateBasicReply(analysis, persona, isFirstMessage = true) {
   const { intent, area, timeframe } = analysis;
   const intentText = intent === "rent" ? "a rental" : "a property to buy";
 
-  let opener = `Thanks for reaching out!`;
-  if (area && area !== "Unknown") {
-    opener += ` ${area} is a solid choice if you're looking for ${intentText}.`;
-  }
+  let opener = isFirstMessage 
+    ? `Hi, I'm ${persona.name} from ${FIRM_NAME}. Thanks for reaching out!`
+    : `Thanks for that info!`;
 
-  let personaLine = ` I'll connect you with ${persona.name}, our ${persona.specialty.toLowerCase()}.`;
+  if (area && area !== "Unknown") {
+    opener += ` ${area} is a great choice if you're looking for ${intentText}.`;
+  }
 
   let followUpQuestion = "";
   if (intent === "rent") {
     followUpQuestion =
-      " Do you prefer furnished or unfurnished, and when exactly are you planning to move?";
+      " To help me find the best options, could you tell me your budget range and when you're planning to move?";
   } else {
     followUpQuestion =
-      " Are you planning to live in the property yourself, or are you mainly looking at it as an investment?";
+      " To better assist you, what's your budget range and are you looking to live in the property or invest?";
   }
 
-  let timeframeLine = "";
-  if (timeframe && timeframe !== "unspecified") {
-    timeframeLine = ` Since you're looking around ${timeframe}, we can shortlist the best options and viewing times for you.`;
-  }
-
-  return `${opener}${personaLine}${timeframeLine}${followUpQuestion}`;
+  return `${opener}${followUpQuestion}`;
 }
 
 // --- AI reply generator using Gemini + Qdrant context + Properties ---
-async function generateReplyAI(analysis, persona, qdrantSnippets, recommendedProperties = [], userRequestedProperties = false) {
+async function generateReplyAI(analysis, persona, qdrantSnippets, recommendedProperties = [], userRequestedProperties = false, isFirstMessage = true) {
   try {
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
 
@@ -470,41 +514,68 @@ async function generateReplyAI(analysis, persona, qdrantSnippets, recommendedPro
           )
           .join("\n");
       } else {
-        propertiesText = "(User asked for properties but none matched their criteria - apologize and offer to help find alternatives)";
+        propertiesText = "(User asked for properties but none matched their criteria - apologize warmly and offer to help find alternatives)";
       }
     } else {
-      propertiesText = "(User did NOT request properties - do NOT mention any properties in your reply. Keep it conversational and helpful.)";
+      propertiesText = "(User did NOT request properties - DO NOT mention any properties, listings, or photos in your reply. Keep it conversational and focus on qualifying the lead with questions.)";
     }
 
+    // Build persona-specific context
+    const personaContext = `
+Your persona: ${persona.name}
+Your specialty: ${persona.specialty}
+Your areas of expertise: ${persona.areas.join(", ")}
+Your communication style: ${persona.description}
+
+You specialize in ${persona.type === "luxury" ? "high-end luxury properties" : persona.type === "off-plan" ? "off-plan investments and payment plans" : "mid-budget rentals and family-friendly properties"}.
+`.trim();
+
+    // Replace placeholders in base prompt
+    const systemPrompt = BASE_AGENT_SYSTEM_PROMPT
+      .replace(/\{\{AGENT_NAME\}\}/g, persona.name)
+      .replace(/\{\{FIRM_NAME\}\}/g, FIRM_NAME);
+
+    // Build the full prompt
     const prompt = `
-You are ${persona.name}, a ${persona.specialty} at a Dubai real estate brokerage.
+${systemPrompt}
 
-You are replying over WhatsApp/email to a potential client.
-Write a short, clear, professional reply with 4–7 sentences.
+---
 
-CRITICAL INSTRUCTION:
+${personaContext}
+
+---
+
+CRITICAL INSTRUCTIONS FOR THIS REPLY:
+
+${isFirstMessage 
+  ? `This is your FIRST message in this conversation. You MUST start with: "Hi, I'm ${persona.name} from ${FIRM_NAME}. Thanks for reaching out!" Then continue naturally.`
+  : `This is NOT your first message. Do NOT re-introduce yourself. Continue the conversation naturally.`}
+
 ${userRequestedProperties 
-  ? 'The user EXPLICITLY asked to see properties/listings/photos. You should mention the properties provided below and offer to share more details or photos.' 
-  : 'The user did NOT ask to see properties. DO NOT mention any properties, listings, or photos in your reply. Keep it conversational - ask about their needs, preferences, timeline, etc. Do NOT offer to show properties unless they explicitly ask.'}
+  ? 'The user EXPLICITLY asked to see properties/listings/photos. Mention the properties provided below naturally and offer to share more details or photos.' 
+  : 'The user did NOT ask to see properties. DO NOT mention any properties, listings, or photos. Focus on qualifying the lead by asking 2-3 natural questions about budget, area preferences, timeframe, and purpose (buy/rent/invest).'}
 
-Constraints:
-- Use only the information provided in the analysis JSON, knowledge snippets, and recommended properties.
-- Do NOT invent specific prices, yields, or legal details beyond what is given.
-- If you are not sure about something, say you'll confirm details instead of guessing.
-- Keep the tone aligned with this persona: ${persona.description}
-- Focus on being helpful, asking 1–2 smart follow-up questions, and inviting the client to continue.
-- Do NOT paste image URLs or property IDs. Just refer to properties naturally in your text (ONLY if user requested them).
+---
 
-Lead analysis (JSON):
+Lead analysis (extracted from user's message):
 ${JSON.stringify(analysis, null, 2)}
 
-Knowledge snippets (may be 0 or more, use only if relevant):
+Knowledge snippets about Dubai (use as background context):
 ${knowledgeText || "(no extra snippets)"}
 
-Recommended properties (may be 0 or more):
+Recommended properties (ONLY mention if user requested them):
 ${propertiesText}
 
-Write your reply in first person as ${persona.name}.
+---
+
+Write your WhatsApp reply now. Remember:
+- Natural, conversational tone
+- Short paragraphs
+- Use contractions
+- No bullets or lists
+- Acknowledge what they said, add one helpful insight, ask 2-3 qualifying questions
+- End with a gentle next step
+
 Only output the message text the client should see, no explanations or JSON.
     `.trim();
 
@@ -515,7 +586,7 @@ Only output the message text the client should see, no explanations or JSON.
   } catch (err) {
     console.error("generateReplyAI error, falling back to basic reply:", err);
     // Fallback: use the template reply so we never crash
-    return generateBasicReply(analysis, persona);
+    return generateBasicReply(analysis, persona, isFirstMessage);
   }
 }
 
@@ -1166,9 +1237,11 @@ app.get("/api/test-gemini", async (req, res) => {
 
 app.post("/api/lead", async (req, res) => {
   try {
-    const { channel, text } = req.body || {};
+    const { channel, text, isFirstMessage } = req.body || {};
+    // Default to true if not provided (assume first message)
+    const isFirst = isFirstMessage !== undefined ? isFirstMessage : true;
 
-    console.log("Received lead:", { channel, text });
+    console.log("Received lead:", { channel, text, isFirstMessage: isFirst });
 
     // 1) AI analysis with safe Gemini wrapper
     const analysis = await analyzeLeadGemini(text);
@@ -1236,7 +1309,7 @@ app.post("/api/lead", async (req, res) => {
       qdrantContext = await getKnowledgeForLead(analysis, safePersona);
 
       // 3b) Generate grounded AI reply using Gemini + Qdrant + Properties
-      reply = await generateReplyAI(analysis, safePersona, qdrantContext, recommendedProperties, shouldShowProperties);
+      reply = await generateReplyAI(analysis, safePersona, qdrantContext, recommendedProperties, shouldShowProperties, isFirst);
     }
 
     // Attach context into analysis for debugging / UI
