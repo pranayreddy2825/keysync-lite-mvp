@@ -19,13 +19,40 @@ Real estate agencies in Dubai and the GCC region face overwhelming lead volumes 
 
 ### The Solution
 
-KeySync Lite leverages **Google Gemini 2.0** for natural language understanding, **Qdrant Vector Database** for semantic property search, and intelligent routing algorithms to:
+KeySync Lite leverages **Google Gemini 2.0** and **Qdrant as an adaptive AI memory layer** to:
 
-- **Analyze** incoming leads in sub-second timeframes
-- **Score** leads based on intent, budget, and urgency
-- **Route** to specialized personas (Luxury, Off-Plan, Rental)
-- **Generate** context-aware responses with property recommendations
-- **Visualize** the entire AI pipeline for transparency
+- **Analyze** incoming leads in sub-second timeframes and extract structured fields (intent, budget, area, client type, timeframe).
+
+- **Store and retrieve** Dubai-specific knowledge, firm-specific inventories, personas, and past leads using Qdrant collections.
+
+- **Score** every lead out of 10 and decide whether a specialized AI agent or a human manager should handle it.
+
+- **Route** to one of three expert AI personas and generate natural, conversational replies that feel like a top-performing WhatsApp agent, not a generic chatbot.
+
+- **Surface** the entire AI pipeline and memory usage for transparency in the dashboard and AI Pipeline views.
+
+#### Specialized AI Agents & Persona-Based Routing
+
+KeySync Lite doesn't just "reply" – it routes each lead to a specialized AI agent trained like a top sales performer:
+
+- **Sarah Al Mansoori – Luxury Specialist**  
+  Handles high-budget buyers in prime areas (Dubai Marina, Downtown, Palm) with a polished, concierge-style tone.
+
+- **Priya Varma – Rental & Mid-Market Specialist**  
+  Helps families and young professionals with friendly, practical guidance around JVC, Sports City, Al Barsha and similar communities.
+
+- **Omar Haddad – Investment & Off-Plan Advisor**  
+  Speaks to investors and ROI-focused buyers in a calm, numbers-aware, advisory tone.
+
+Each agent:
+
+- Introduces themselves on the first message ("Hi, I'm Sarah from KeySync Lite…"),
+
+- Uses psychologically aware, conversational prompts to build trust,
+
+- And asks 2–3 smart, natural questions to upgrade vague leads into highly qualified briefs.
+
+Automatic persona selection is guided by both the extracted analysis (intent, budget, area) and Qdrant-powered memory about what has converted well in the past.
 
 ---
 
@@ -94,17 +121,44 @@ KeySync Lite leverages **Google Gemini 2.0** for natural language understanding,
 - Automatic priority classification (Low, Medium, High, VIP)
 - High-priority leads (<25%) automatically escalated to human agents
 
-#### 🎭 **Persona-Based Routing**
-- **Omar Al-Rashid** – Luxury & Marina specialist
-- **Priya Varma** – Off-plan & investment expert
-- **Ahmed Hassan** – Rental & budget-friendly properties
-- Automatic persona selection based on lead characteristics
+#### 🎭 **Specialized AI Agents & Persona-Based Routing**
 
-#### 🔍 **Semantic Property Search**
-- **Qdrant Vector Database** for Dubai-specific knowledge retrieval
-- Text-based embeddings for intelligent property matching
-- Property recommendations with images when explicitly requested
-- Support for 10+ curated Dubai properties with metadata
+KeySync Lite routes each lead to one of three expert AI agents, each trained like a top-performing sales specialist:
+
+- **Sarah Al Mansoori – Luxury Specialist**  
+  Polished, concierge-style communication for high-budget buyers in prime areas (Dubai Marina, Downtown Dubai, Palm Jumeirah). Emphasizes lifestyle, quality, and VIP treatment.
+
+- **Priya Varma – Rental & Mid-Market Specialist**  
+  Friendly, practical, and empathetic guidance for families and young professionals. Focuses on areas like JVC, Sports City, Al Barsha. Specializes in turning vague inquiries into qualified briefs.
+
+- **Omar Haddad – Investment & Off-Plan Advisor**  
+  Strategic, numbers-aware, professional tone for investors and ROI-focused buyers. Works with areas like Dubai Creek Harbour, Sobha Hartland, Business Bay.
+
+**Agent Behavior:**
+- Natural, conversational WhatsApp-style replies (2-4 short paragraphs, no bullets)
+- Psychologically aware prompts that build trust and rapport
+- Lead upgrade strategy: acknowledge → insight → 2-3 qualifying questions
+- First message introduction ("Hi, I'm [Name] from KeySync Lite...")
+- Automatic persona selection using lead analysis + Qdrant memory of past conversions
+
+#### 🧠 **Qdrant-Powered Adaptive Memory**
+
+KeySync Lite uses **Qdrant as the adaptive brain** of the system, not just a simple vector lookup:
+
+- **Multi-Collection Memory Layer:**
+  - `keysync_knowledge` – Dubai-specific area guides, community info, FAQs, and firm playbooks
+  - `properties` – Firm inventory with semantic search and payload filters (area, budget, bedrooms)
+  - `lead_memory` – Every processed lead stored with outcomes for adaptive learning
+
+- **Outcome-Aware Intelligence:**
+  - Property re-ranking based on conversion history from similar past leads
+  - Persona routing optimized using historical conversion rates
+  - Transparent learning visible in AI Pipeline UI (similar leads & outcomes)
+
+- **Semantic Property Search:**
+  - Text-based embeddings for intelligent property matching
+  - Property recommendations with images when explicitly requested
+  - Support for 10+ curated Dubai properties with metadata
 
 #### 💬 **Omni-Channel Simulation**
 - **WhatsApp Demo** – Realistic chat interface with AI responses
@@ -208,12 +262,14 @@ KeySync Lite leverages **Google Gemini 2.0** for natural language understanding,
 **AI & Data:**
 - **Google Gemini 2.0 Flash** for:
   - Lead analysis and extraction
-  - Text embedding generation
-  - Response generation
-- **Qdrant Vector Database** for:
-  - Semantic search
-  - Dubai-specific knowledge base
-  - Property recommendations
+  - Text embedding generation (768-dim vectors)
+  - Response generation with persona-specific prompts
+- **Qdrant Vector Database** (Adaptive Memory Layer) for:
+  - Multi-collection semantic search (`keysync_knowledge`, `properties`, `lead_memory`)
+  - Dubai-specific knowledge base retrieval
+  - Outcome-aware property re-ranking
+  - Adaptive persona routing based on conversion history
+  - Transparent learning visualization
 
 ### Data Flow
 
@@ -222,21 +278,37 @@ User Message (WhatsApp/Gmail)
     ↓
 Express Backend (/api/lead)
     ↓
-Gemini Analysis → Extract: intent, budget, area, timeline
+Gemini Analysis → Extract: intent, budget, area, timeline, client_type
     ↓
-Generate Embedding → Query Qdrant
+Generate Lead Embedding → Query Qdrant lead_memory for similar past leads
     ↓
-Retrieve Knowledge Snippets + Properties (if requested)
+Qdrant Multi-Collection Queries:
+    - keysync_knowledge: Retrieve Dubai-specific context
+    - properties: Semantic property search (if requested)
+    - lead_memory: Find similar leads + outcomes for adaptive routing
     ↓
-Select Persona → Calculate Lead Score
+Adaptive Persona Selection:
+    - Baseline rules (intent, budget, area)
+    - Qdrant memory: Conversion rates per persona for similar leads
+    - Select best-performing persona
     ↓
-Generate AI Response (with context)
+Outcome-Aware Property Re-Ranking (if requested):
+    - Base similarity score from Qdrant
+    - Boost properties that converted for similar leads
+    - Penalize properties with "lost" outcomes
     ↓
-Return JSON: { analysis, persona, reply, recommendedProperties }
+Generate AI Response:
+    - Persona-specific prompt (Sarah/Priya/Omar)
+    - Lead upgrade rules: acknowledge → insight → 2-3 questions
+    - Natural, conversational WhatsApp style
+    ↓
+Store Lead in Qdrant lead_memory (for future learning)
+    ↓
+Return JSON: { analysis, persona, reply, recommendedProperties, similar_leads, persona_metadata }
     ↓
 Frontend Rendering:
     - WhatsApp/Gmail: Show reply + property cards
-    - AI Pipeline: Show step-by-step breakdown
+    - AI Pipeline: Show step-by-step breakdown + Qdrant learning visualization
     - Dashboard: Update metrics
 ```
 
@@ -299,11 +371,9 @@ We use multiple Qdrant collections, each representing a different slice of the b
 
 - **`properties`** – The firm's inventory: descriptions, areas, bedrooms, price bands, type (rent/sale/off-plan), and images, all embedded for semantic search with payload filters (e.g., area, budget, bedrooms).
 
-- **`personas`** – Embeddings of our three AI agents (Sarah, Priya, Omar) and their communication styles, strengths, and target lead profiles, tuned to each firm's brand tone and business model.
+- **`lead_memory`** – Every processed lead becomes a Qdrant point with its message embedding, score, priority, persona used, channel, recommended properties, and outcome (converted/lost/no_response/in_progress). This collection enables adaptive learning by storing what worked and what didn't.
 
-- **`lead_memory`** – Every processed lead becomes a Qdrant point with its message embedding, score, priority, persona used, channel, recommended properties, and outcome (converted/lost/no_response/in_progress).
-
-This turns Qdrant into a unified memory graph of **knowledge, inventory, behavior, and results**.
+This turns Qdrant into a unified memory graph of **knowledge, inventory, and conversion outcomes**.
 
 ### How Qdrant Powers Each Lead
 
@@ -312,8 +382,8 @@ For every incoming lead, KeySync Lite runs a multi-step pipeline where Qdrant is
 1. **Context retrieval (`keysync_knowledge`)**  
    We embed the lead message with Gemini and query Qdrant to pull the most relevant Dubai-specific knowledge and firm-specific snippets. This keeps responses grounded and reduces hallucinations.
 
-2. **Persona selection (`personas` + `lead_memory`)**  
-   We use vector similarity against the personas collection (and optionally `lead_memory`) to decide whether Sarah (luxury), Priya (rental/mid-market), or Omar (investor/off-plan) is the best fit for this specific lead. The `lead_memory` collection allows us to bias persona selection toward agents who historically convert similar leads best.
+2. **Adaptive persona selection (baseline rules + `lead_memory`)**  
+   We start with rule-based persona selection (intent, budget, area, keywords), then query `lead_memory` for similar past leads. We analyze conversion rates per persona and bias the selection toward agents who historically convert similar leads best. This creates a learning system that gets smarter over time.
 
 3. **Property matching (`properties`)**  
    When the lead is ready for recommendations, we combine:
