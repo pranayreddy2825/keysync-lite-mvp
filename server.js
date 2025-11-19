@@ -569,6 +569,60 @@ function buildConversationContextBlock(isFirstMessage, agentName, firmName) {
   }
 }
 
+/**
+ * Builds the full system prompt for Gemini by combining base prompt, persona-specific prompt,
+ * conversation context, and lead upgrade rules.
+ * 
+ * @param {string} agentKey - Agent identifier: "sarah", "priya", or "omar"
+ * @param {boolean} isFirstMessage - Whether this is the first message in the conversation
+ * @returns {string} Complete system prompt string
+ */
+function buildAgentSystemPrompt(agentKey, isFirstMessage) {
+  // Find persona from PERSONAS array
+  const persona = PERSONAS.find(p => p.id === agentKey);
+  if (!persona) {
+    throw new Error(`Unknown agent key: ${agentKey}`);
+  }
+
+  const agentName = persona.name;
+
+  // Get persona-specific prompt
+  let personaPrompt;
+  if (agentKey === "sarah") {
+    personaPrompt = SARAH_PROMPT;
+  } else if (agentKey === "priya") {
+    personaPrompt = PRIYA_PROMPT;
+  } else if (agentKey === "omar") {
+    personaPrompt = OMAR_PROMPT;
+  } else {
+    // Fallback to generic
+    personaPrompt = `
+Your persona: ${persona.name}
+Your specialty: ${persona.specialty}
+Your areas of expertise: ${persona.areas.join(", ")}
+Your communication style: ${persona.description}
+`.trim();
+  }
+
+  // Replace placeholders in base prompt and persona prompt
+  const systemPrompt = BASE_AGENT_SYSTEM_PROMPT
+    .replace(/\{\{AGENT_NAME\}\}/g, agentName)
+    .replace(/\{\{FIRM_NAME\}\}/g, FIRM_NAME);
+
+  const personaPromptResolved = personaPrompt
+    .replace(/\{\{AGENT_NAME\}\}/g, agentName);
+
+  const conversationContext = buildConversationContextBlock(isFirstMessage, agentName, FIRM_NAME);
+
+  // Combine all parts
+  return [
+    systemPrompt,
+    personaPromptResolved,
+    conversationContext,
+    LEAD_UPGRADE_RULES,
+  ].join("\n\n");
+}
+
 // --- Basic reply generator (template style, fallback only) ---
 function generateBasicReply(analysis, persona, isFirstMessage = true) {
   const { intent, area, timeframe } = analysis;
@@ -620,44 +674,12 @@ async function generateReplyAI(analysis, persona, qdrantSnippets, recommendedPro
       propertiesText = "(User did NOT request properties - DO NOT mention any properties, listings, or photos in your reply. Keep it conversational and focus on qualifying the lead with questions.)";
     }
 
-    // Get persona-specific prompt based on agent ID
-    let personaSpecificPrompt = "";
-    switch (persona.id) {
-      case "sarah":
-        personaSpecificPrompt = SARAH_PROMPT.replace(/\{\{AGENT_NAME\}\}/g, persona.name);
-        break;
-      case "priya":
-        personaSpecificPrompt = PRIYA_PROMPT.replace(/\{\{AGENT_NAME\}\}/g, persona.name);
-        break;
-      case "omar":
-        personaSpecificPrompt = OMAR_PROMPT.replace(/\{\{AGENT_NAME\}\}/g, persona.name);
-        break;
-      default:
-        // Fallback to generic persona context
-        personaSpecificPrompt = `
-Your persona: ${persona.name}
-Your specialty: ${persona.specialty}
-Your areas of expertise: ${persona.areas.join(", ")}
-Your communication style: ${persona.description}
-`.trim();
-    }
-
-    // Replace placeholders in base prompt
-    const systemPrompt = BASE_AGENT_SYSTEM_PROMPT
-      .replace(/\{\{AGENT_NAME\}\}/g, persona.name)
-      .replace(/\{\{FIRM_NAME\}\}/g, FIRM_NAME);
+    // Build the full system prompt using helper function
+    const fullSystemPrompt = buildAgentSystemPrompt(persona.id, isFirstMessage);
 
     // Build the full prompt
     const prompt = `
-${systemPrompt}
-
----
-
-${personaSpecificPrompt}
-
----
-
-${LEAD_UPGRADE_RULES}
+${fullSystemPrompt}
 
 ---
 
