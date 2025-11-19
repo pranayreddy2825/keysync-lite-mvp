@@ -932,6 +932,16 @@ function isRequestingProperties(text) {
   // Pattern 10: "suggest me [some] photos/properties"
   const suggestMePattern = /suggest\s+(me\s+)?(some\s+)?(photos?|pictures?|images?|properties|listings)/i;
   
+  // Pattern 11: Follow-up affirmative responses that imply property requests
+  // These catch responses like "yes please", "okay send them", "sure show me", etc.
+  const affirmativePattern = /^(yes|yeah|yep|ok|okay|okey|sure|alright|all\s+right|please|go\s+ahead|send|show)\s*(please|them|it|me|.*)?$/i;
+  
+  // Pattern 12: "I'd like to see [them/those/some]"
+  const likeToSeePattern = /(i\s+)?(would\s+)?(like|love)\s+(to\s+)?(see|view|look\s+at)\s+(them|those|some|it)/i;
+  
+  // Pattern 13: "send/show [them/those]"
+  const sendThemPattern = /^(send|show|share|give)\s+(me\s+)?(them|those|some|it)/i;
+  
   // Check all patterns
   const patterns = [
     showMePattern,
@@ -943,7 +953,10 @@ function isRequestingProperties(text) {
     photoImagePattern,
     whatPropertiesPattern,
     giveMePattern,
-    suggestMePattern
+    suggestMePattern,
+    affirmativePattern,
+    likeToSeePattern,
+    sendThemPattern
   ];
   
   return patterns.some(pattern => pattern.test(text));
