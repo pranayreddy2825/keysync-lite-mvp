@@ -24,7 +24,11 @@ const qdrantClient = new QdrantClient({
 });
 
 const QDRANT_COLLECTION = "keysync_knowledge";
+const QDRANT_LEAD_MEMORY_COLLECTION = "lead_memory";
 const QDRANT_VECTOR_DIM = 768;
+
+// Default firm ID (can be overridden via env var)
+const DEFAULT_FIRM_ID = process.env.FIRM_ID || "demo_firm";
 
 async function ensureKnowledgeCollection() {
   if (!process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
@@ -52,6 +56,42 @@ async function ensureKnowledgeCollection() {
     }
   } catch (err) {
     console.error("Error ensuring Qdrant collection:", err);
+  }
+}
+
+/**
+ * Ensures the lead_memory collection exists in Qdrant.
+ * This collection stores processed leads with their outcomes for adaptive learning.
+ */
+async function ensureLeadMemoryCollection() {
+  if (!process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
+    console.warn("Qdrant env vars not set, skipping lead_memory collection init");
+    return false;
+  }
+
+  try {
+    const collections = await qdrantClient.getCollections();
+    const exists = collections.collections.some(
+      (c) => c.name === QDRANT_LEAD_MEMORY_COLLECTION
+    );
+
+    if (!exists) {
+      console.log("Creating Qdrant collection:", QDRANT_LEAD_MEMORY_COLLECTION);
+      await qdrantClient.createCollection(QDRANT_LEAD_MEMORY_COLLECTION, {
+        vectors: {
+          size: QDRANT_VECTOR_DIM,
+          distance: "Cosine"
+        }
+      });
+      console.log("✅ Lead memory collection created");
+      return true;
+    } else {
+      console.log("Lead memory collection already exists");
+      return true;
+    }
+  } catch (err) {
+    console.error("Error ensuring lead_memory collection:", err);
+    return false;
   }
 }
 
@@ -265,7 +305,90 @@ async function analyzeLeadGemini(text) {
   }
 }
 
-// --- Choose persona based on naive analysis ---
+/**
+ * Chooses persona based on analysis + text, with adaptive learning from lead_memory.
+ * Returns persona object and metadata about the decision.
+ */
+async function choosePersonaWithMemory(analysis, text, leadEmbedding, firmId = DEFAULT_FIRM_ID) {
+  // Step A: Baseline persona selection using existing rules
+  const baselinePersona = choosePersona(analysis, text);
+
+  // Step B: Query lead_memory for similar leads
+  const similarLeads = await findSimilarLeads(leadEmbedding, firmId, 20);
+
+  if (similarLeads.length === 0) {
+    // No memory data yet - use baseline
+    return {
+      persona: baselinePersona,
+      decision_metadata: {
+        method: "baseline_rules",
+        similar_leads_count: 0,
+        persona_counts: {}
+      }
+    };
+  }
+
+  // Step C: Analyze outcomes by persona
+  const personaOutcomes = {};
+  PERSONAS.forEach(p => {
+    personaOutcomes[p.id] = {
+      converted: 0,
+      lost: 0,
+      in_progress: 0,
+      total: 0
+    };
+  });
+
+  similarLeads.forEach(lead => {
+    const personaId = lead.persona_used;
+    if (personaOutcomes[personaId]) {
+      personaOutcomes[personaId].total++;
+      if (lead.outcome === "converted") personaOutcomes[personaId].converted++;
+      else if (lead.outcome === "lost") personaOutcomes[personaId].lost++;
+      else personaOutcomes[personaId].in_progress++;
+    }
+  });
+
+  // Step D: Calculate conversion rates and choose best persona
+  let bestPersona = baselinePersona;
+  let bestConversionRate = 0;
+  const personaStats = {};
+
+  PERSONAS.forEach(p => {
+    const stats = personaOutcomes[p.id];
+    const conversionRate = stats.total > 0 ? stats.converted / stats.total : 0;
+    personaStats[p.id] = {
+      conversion_rate: conversionRate,
+      converted: stats.converted,
+      lost: stats.lost,
+      total: stats.total
+    };
+
+    // Only override baseline if we have significant data (at least 3 leads) and better conversion
+    if (stats.total >= 3 && conversionRate > bestConversionRate) {
+      bestConversionRate = conversionRate;
+      bestPersona = p;
+    }
+  });
+
+  const method = bestPersona.id === baselinePersona.id ? "baseline_rules" : "memory_optimized";
+
+  console.log(`Persona selection: ${method} → ${bestPersona.id} (${(bestConversionRate * 100).toFixed(1)}% conversion rate)`);
+
+  return {
+    persona: bestPersona,
+    decision_metadata: {
+      method,
+      similar_leads_count: similarLeads.length,
+      persona_counts: personaStats,
+      baseline_persona: baselinePersona.id,
+      selected_persona: bestPersona.id,
+      conversion_rate: bestConversionRate
+    }
+  };
+}
+
+// --- Choose persona based on naive analysis (baseline, kept for backward compatibility) ---
 function choosePersona(analysis, text) {
   const lower = (text || "").toLowerCase();
 
@@ -607,8 +730,139 @@ function isRequestingProperties(text) {
   return hasKeyword || hasQuestionPattern || hasImageListingRequest;
 }
 
-// --- Property retrieval helper ---
-async function getRecommendedProperties(analysis, text) {
+/**
+ * Writes a processed lead into the lead_memory collection for adaptive learning.
+ * This function is non-blocking and won't break lead processing if it fails.
+ */
+async function writeLeadToMemory(leadData) {
+  const {
+    text,           // Original lead message
+    channel,        // "whatsapp" | "gmail" | "portal"
+    analysis,       // Full analysis object
+    persona,        // Selected persona
+    recommendedProperties, // Array of property objects
+    firmId = DEFAULT_FIRM_ID
+  } = leadData;
+
+  if (!process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
+    return; // Silently skip if Qdrant not configured
+  }
+
+  try {
+    // Ensure collection exists
+    await ensureLeadMemoryCollection();
+
+    // Generate embedding from original lead text
+    const leadVector = await embedText(text || "");
+
+    // Extract property IDs from recommended properties
+    const propertyIds = (recommendedProperties || []).map(p => p.id || p.title).filter(Boolean);
+
+    // Generate short summary from analysis
+    const summaryParts = [];
+    if (analysis.intent) summaryParts.push(`Looking to ${analysis.intent}`);
+    if (analysis.area && analysis.area !== "Unknown") summaryParts.push(`in ${analysis.area}`);
+    if (analysis.budget && analysis.budget > 0) {
+      summaryParts.push(`budget ${(analysis.budget / 1000000).toFixed(1)}M AED`);
+    }
+    const shortSummary = summaryParts.length > 0 
+      ? summaryParts.join(", ") 
+      : "General property inquiry";
+
+    // Create payload for lead_memory
+    const payload = {
+      firm_id: firmId,
+      channel: channel || "unknown",
+      lead_score: analysis.lead_score || 0,
+      priority: analysis.priority || "low",
+      persona_used: persona?.id || "unknown",
+      outcome: "in_progress", // Default - will be updated when we get CRM feedback
+      property_ids: propertyIds,
+      timestamp: new Date().toISOString(),
+      short_summary: shortSummary,
+      // Store additional context for future analysis
+      intent: analysis.intent,
+      area: analysis.area,
+      client_type: analysis.client_type,
+      budget: analysis.budget
+    };
+
+    // Generate unique ID for this lead (timestamp + hash of text)
+    const leadId = `lead_${Date.now()}_${Buffer.from(text || "").toString("base64").substring(0, 16)}`;
+
+    // Upsert to lead_memory collection
+    await qdrantClient.upsert(QDRANT_LEAD_MEMORY_COLLECTION, {
+      points: [{
+        id: leadId,
+        vector: leadVector,
+        payload: payload
+      }]
+    });
+
+    console.log("✅ Lead written to memory:", { leadId, persona: persona?.id, propertyCount: propertyIds.length });
+  } catch (err) {
+    // Non-blocking: log error but don't throw
+    console.error("⚠️ Failed to write lead to memory (non-critical):", err.message);
+  }
+}
+
+/**
+ * Searches for similar past leads in lead_memory and returns them with outcomes.
+ * Used for adaptive property ranking and persona routing.
+ */
+async function findSimilarLeads(leadEmbedding, firmId = DEFAULT_FIRM_ID, limit = 10) {
+  if (!process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
+    return [];
+  }
+
+  try {
+    // Check if collection exists
+    const collections = await qdrantClient.getCollections();
+    const hasCollection = collections.collections.some(c => c.name === QDRANT_LEAD_MEMORY_COLLECTION);
+    
+    if (!hasCollection) {
+      console.log("Lead memory collection doesn't exist yet - no similar leads to find");
+      return [];
+    }
+
+    // Search for similar leads using vector similarity
+    const similarLeads = await qdrantClient.search(QDRANT_LEAD_MEMORY_COLLECTION, {
+      vector: leadEmbedding,
+      limit: limit,
+      with_payload: true,
+      with_vectors: false,
+      filter: {
+        must: [
+          {
+            key: "firm_id",
+            match: { value: firmId }
+          }
+        ]
+      }
+    });
+
+    return similarLeads.map(pt => ({
+      short_summary: pt.payload?.short_summary || "Lead inquiry",
+      persona_used: pt.payload?.persona_used || "unknown",
+      outcome: pt.payload?.outcome || "in_progress",
+      channel: pt.payload?.channel || "unknown",
+      timestamp: pt.payload?.timestamp,
+      property_ids: pt.payload?.property_ids || [],
+      lead_score: pt.payload?.lead_score || 0,
+      priority: pt.payload?.priority || "low",
+      similarity_score: pt.score
+    }));
+  } catch (err) {
+    console.error("Error finding similar leads:", err);
+    return [];
+  }
+}
+
+/**
+ * Searches and re-ranks properties using lead_memory conversion outcomes.
+ * Properties that converted in similar past leads get a boost in ranking.
+ */
+async function searchAndRerankPropertiesForLead(leadEmbedding, analysis, text, firmId = DEFAULT_FIRM_ID) {
   if (!process.env.QDRANT_URL || !process.env.QDRANT_API_KEY) {
     console.warn("Qdrant env vars not set – skipping property lookup");
     return [];
@@ -645,8 +899,8 @@ async function getRecommendedProperties(analysis, text) {
 
     console.log("Property query text:", queryText);
 
-    // Embed query text
-    const queryVector = await embedText(queryText);
+    // Use the provided embedding or generate one
+    const queryVector = leadEmbedding || await embedText(queryText);
 
     // Ensure properties collection exists before searching
     try {
@@ -708,9 +962,42 @@ async function getRecommendedProperties(analysis, text) {
       }
     }
 
-    // Map to Property format
-    const properties = (searchResult || []).map((pt) => {
+    // Step B: Find similar leads in lead_memory to get conversion data
+    const similarLeads = await findSimilarLeads(queryVector, firmId, 10);
+    
+    // Step C: Build conversion score map from similar leads
+    const propertyConversionScores = {};
+    const propertyLossCounts = {};
+    
+    similarLeads.forEach(lead => {
+      const propertyIds = lead.property_ids || [];
+      propertyIds.forEach(propId => {
+        if (lead.outcome === "converted") {
+          propertyConversionScores[propId] = (propertyConversionScores[propId] || 0) + 1;
+        } else if (lead.outcome === "lost") {
+          propertyLossCounts[propId] = (propertyLossCounts[propId] || 0) + 1;
+        }
+      });
+    });
+
+    console.log(`Found ${similarLeads.length} similar leads with conversion data`);
+
+    // Step D: Re-rank properties using conversion scores
+    const ALPHA = 0.15; // Boost factor for conversion history
+    const BETA = 0.05;  // Penalty factor for loss history
+    
+    const rerankedProperties = (searchResult || []).map((pt) => {
       const payload = pt.payload || {};
+      const propertyId = payload.id || payload.title;
+      const baseScore = pt.score || 0;
+      
+      // Calculate conversion boost
+      const conversionCount = propertyConversionScores[propertyId] || 0;
+      const lossCount = propertyLossCounts[propertyId] || 0;
+      const conversionBoost = ALPHA * conversionCount;
+      const lossPenalty = BETA * lossCount;
+      const finalScore = baseScore + conversionBoost - lossPenalty;
+
       return {
         id: payload.id,
         title: payload.title,
@@ -719,15 +1006,49 @@ async function getRecommendedProperties(analysis, text) {
         bedrooms: payload.bedrooms,
         price: payload.price,
         currency: payload.currency || "AED",
-        images: payload.images || []
+        images: payload.images || [],
+        _rerank_score: finalScore,
+        _conversion_count: conversionCount,
+        _base_score: baseScore
       };
     });
 
-    return properties;
+    // Sort by final re-ranked score (descending)
+    rerankedProperties.sort((a, b) => (b._rerank_score || 0) - (a._rerank_score || 0));
+
+    // Remove internal scoring fields before returning
+    const cleanedProperties = rerankedProperties.map(({ _rerank_score, _conversion_count, _base_score, ...rest }) => rest);
+
+    if (similarLeads.length > 0 && rerankedProperties.length > 0) {
+      console.log(`✅ Re-ranked ${cleanedProperties.length} properties using ${similarLeads.length} similar leads`);
+    }
+
+    return cleanedProperties;
   } catch (err) {
-    console.error("getRecommendedProperties error:", err);
+    console.error("searchAndRerankPropertiesForLead error:", err);
     return [];
   }
+}
+
+// --- Property retrieval helper (backward compatible wrapper) ---
+async function getRecommendedProperties(analysis, text) {
+  // Generate embedding for the lead
+  const parts = [];
+  parts.push("Dubai");
+  if (analysis.area && analysis.area !== "Unknown" && analysis.area !== "unknown") {
+    parts.push(analysis.area);
+  }
+  if (analysis.intent) {
+    parts.push(analysis.intent === "rent" ? "rental" : "for sale");
+  }
+  if (text) {
+    parts.push(text.substring(0, 150).trim());
+  }
+  const queryText = parts.length > 0 ? parts.join(". ") : "Dubai property apartment villa";
+  const leadEmbedding = await embedText(queryText);
+
+  // Use the new adaptive ranking function
+  return await searchAndRerankPropertiesForLead(leadEmbedding, analysis, text);
 }
 
 // --- Express middleware & routes ---
@@ -839,8 +1160,13 @@ app.post("/api/lead", async (req, res) => {
     const analysis = await analyzeLeadGemini(text);
     console.log("Final analysis used:", analysis);
 
-    // 2) Choose persona based on analysis + text
-    const persona = choosePersona(analysis, text);
+    // Generate embedding for adaptive learning (used for persona selection and property ranking)
+    const leadEmbedding = await embedText(text || "");
+
+    // 2) Choose persona with adaptive learning from lead_memory
+    const personaResult = await choosePersonaWithMemory(analysis, text, leadEmbedding);
+    const persona = personaResult.persona;
+    const personaMetadata = personaResult.decision_metadata;
 
     // Safety: if for some reason persona is missing, default to Omar
     const safePersona = persona || PERSONAS.find((p) => p.id === "omar");
@@ -858,10 +1184,19 @@ app.post("/api/lead", async (req, res) => {
     // Only get recommended properties if user explicitly asks for them
     const shouldShowProperties = isRequestingProperties(text);
     
+    // Find similar leads for UI display (regardless of property request)
+    let similarLeads = [];
+    try {
+      similarLeads = await findSimilarLeads(leadEmbedding, DEFAULT_FIRM_ID, 3);
+    } catch (err) {
+      console.error("Error finding similar leads (non-critical):", err);
+    }
+
     if (shouldShowProperties) {
       console.log("User is requesting properties/listings - fetching recommendations");
       try {
-        recommendedProperties = await getRecommendedProperties(analysis, text);
+        // Use adaptive property search with outcome-aware re-ranking
+        recommendedProperties = await searchAndRerankPropertiesForLead(leadEmbedding, analysis, text);
         console.log("Recommended properties:", recommendedProperties.length);
       } catch (err) {
         console.error("Error getting recommended properties:", err);
@@ -894,6 +1229,18 @@ app.post("/api/lead", async (req, res) => {
     analysis.qdrant_context = qdrantContext;
     analysis.recommendedProperties = recommendedProperties;
 
+    // Write lead to memory for future adaptive learning (non-blocking)
+    writeLeadToMemory({
+      text,
+      channel: channel || "unknown",
+      analysis,
+      persona: safePersona,
+      recommendedProperties
+    }).catch(err => {
+      // Already handled in writeLeadToMemory, but catch here to be safe
+      console.error("Lead memory write failed:", err);
+    });
+
     // 4) Knowledge section for quick summary
     const knowledge = [
       "Lead was analyzed using Google Gemini (AI) with fallback to rule-based analysis if needed.",
@@ -904,7 +1251,8 @@ app.post("/api/lead", async (req, res) => {
       `Lead score: ${analysis.lead_score}`,
       `Priority: ${analysis.priority}`,
       `Handling mode: ${handling_mode}`,
-      `Qdrant snippets used: ${qdrantContext.length}`
+      `Qdrant snippets used: ${qdrantContext.length}`,
+      `Similar leads found: ${similarLeads.length}`
     ];
 
     return res.json({
@@ -914,7 +1262,10 @@ app.post("/api/lead", async (req, res) => {
       reply,
       handling_mode,
       needs_human,
-      recommendedProperties
+      recommendedProperties,
+      // Add adaptive learning data for UI
+      similar_leads: similarLeads,
+      persona_metadata: personaMetadata
     });
   } catch (err) {
     console.error("Error in /api/lead:", err);
@@ -932,8 +1283,9 @@ module.exports = app;
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`KeySync Lite server running on http://localhost:${PORT}`);
-    // Init Qdrant collection in background
+    // Init Qdrant collections in background
     ensureKnowledgeCollection();
+    ensureLeadMemoryCollection();
   });
 }
 

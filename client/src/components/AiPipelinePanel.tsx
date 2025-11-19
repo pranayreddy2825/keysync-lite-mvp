@@ -4,7 +4,7 @@ import Badge from './ui/Badge';
 import { Skeleton } from './ui/Skeleton';
 import { EmptyState } from './ui/EmptyState';
 import PropertyCard from './PropertyCard';
-import { FaCheckCircle, FaCircle, FaSpinner } from 'react-icons/fa';
+import { FaCheckCircle, FaCircle, FaSpinner, FaBrain, FaChartLine } from 'react-icons/fa';
 
 interface AiPipelinePanelProps {
   data: LeadResponse | null;
@@ -45,7 +45,7 @@ export default function AiPipelinePanel({ data, isLoading = false, channel = 'wh
     );
   }
 
-  const { analysis, persona, reply, handling_mode } = data;
+  const { analysis, persona, reply, handling_mode, similar_leads, persona_metadata } = data;
 
   // Build pipeline steps with details
   const steps: PipelineStep[] = [
@@ -151,6 +151,26 @@ export default function AiPipelinePanel({ data, isLoading = false, channel = 'wh
             <div className="text-white font-semibold mt-1">{persona.name}</div>
             <div className="text-gray-400 text-xs mt-1">{persona.specialty}</div>
           </div>
+          {persona_metadata && (
+            <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/30 rounded text-xs">
+              <div className="flex items-center gap-2 mb-1">
+                <FaChartLine className="w-3 h-3 text-blue-400" />
+                <span className="text-blue-400 font-medium">
+                  {persona_metadata.method === 'memory_optimized' ? 'Memory-Optimized' : 'Baseline Rules'}
+                </span>
+              </div>
+              {persona_metadata.similar_leads_count > 0 && (
+                <div className="text-gray-300 mt-1">
+                  Analyzed {persona_metadata.similar_leads_count} similar leads
+                  {persona_metadata.conversion_rate !== undefined && (
+                    <span className="text-blue-400 ml-1">
+                      ({((persona_metadata.conversion_rate || 0) * 100).toFixed(0)}% conversion rate)
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap gap-2 mt-2">
             {persona.areas.map((area) => (
               <Badge key={area} variant="default" size="sm">
@@ -207,6 +227,77 @@ export default function AiPipelinePanel({ data, isLoading = false, channel = 'wh
           {handling_mode === 'human' && (
             <div className="p-2 bg-blue-500/20 border border-blue-500/30 rounded text-xs text-blue-400">
               High-value lead escalated to senior advisor
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 7,
+      label: 'Qdrant Learning – Similar Leads & Outcomes',
+      status: similar_leads && similar_leads.length > 0 ? 'complete' : 'pending',
+      details: (
+        <div className="mt-3 space-y-3">
+          <div className="text-xs text-gray-400 leading-relaxed">
+            KeySync Lite uses Qdrant to find similar past leads and their outcomes, then adjusts property ranking and persona routing in real time.
+          </div>
+          {similar_leads && similar_leads.length > 0 ? (
+            <div className="space-y-2">
+              {similar_leads.slice(0, 3).map((lead, idx) => (
+                <div key={idx} className="p-3 bg-gray-800/50 rounded border border-gray-700/50">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="text-sm text-white font-medium mb-1">{lead.short_summary}</div>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Badge 
+                          variant={lead.outcome === 'converted' ? 'success' : lead.outcome === 'lost' ? 'error' : 'muted'} 
+                          size="sm"
+                        >
+                          {lead.outcome === 'converted' ? '✓ Converted' : lead.outcome === 'lost' ? '✗ Lost' : 'In Progress'}
+                        </Badge>
+                        <Badge variant="default" size="sm">
+                          {lead.persona_used}
+                        </Badge>
+                        <Badge variant="info" size="sm">
+                          {lead.channel}
+                        </Badge>
+                        {lead.similarity_score && (
+                          <Badge variant="muted" size="sm">
+                            {(lead.similarity_score * 100).toFixed(0)}% match
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {lead.property_ids && lead.property_ids.length > 0 && lead.outcome === 'converted' && (
+                    <div className="mt-2 pt-2 border-t border-gray-700/50">
+                      <div className="text-xs text-gray-400 mb-1">Converted Properties:</div>
+                      <div className="text-xs text-emerald-400">
+                        {lead.property_ids.slice(0, 2).join(', ')}
+                        {lead.property_ids.length > 2 && ` +${lead.property_ids.length - 2} more`}
+                      </div>
+                    </div>
+                  )}
+                  {lead.timestamp && (
+                    <div className="text-xs text-gray-500 mt-2">
+                      {new Date(lead.timestamp).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {similar_leads.length > 3 && (
+                <div className="text-xs text-gray-400 text-center pt-2">
+                  +{similar_leads.length - 3} more similar leads analyzed
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-4 bg-gray-800/30 rounded border border-gray-700/50 text-center">
+              <FaBrain className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+              <div className="text-sm text-gray-400">No similar leads yet</div>
+              <div className="text-xs text-gray-500 mt-1">
+                As more leads are processed, Qdrant will learn from outcomes and improve recommendations
+              </div>
             </div>
           )}
         </div>
