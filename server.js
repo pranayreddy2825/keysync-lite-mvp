@@ -959,7 +959,16 @@ function isRequestingProperties(text) {
     sendThemPattern
   ];
   
-  return patterns.some(pattern => pattern.test(text));
+  // Test patterns (use lowerText for consistency)
+  for (let i = 0; i < patterns.length; i++) {
+    if (patterns[i].test(lowerText)) {
+      console.log(`✅ Property request detected in: "${lowerText}" (pattern ${i + 1})`);
+      return true;
+    }
+  }
+  
+  console.log(`❌ No property request detected in: "${lowerText}"`);
+  return false;
 }
 
 /**
