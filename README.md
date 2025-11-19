@@ -141,24 +141,22 @@ KeySync Lite routes each lead to one of three expert AI agents, each trained lik
 - First message introduction ("Hi, I'm [Name] from KeySync Lite...")
 - Automatic persona selection using lead analysis + Qdrant memory of past conversions
 
-#### 🧠 **Qdrant-Powered Adaptive Memory**
+#### 🧠 **Qdrant-Powered Semantic Search & Adaptive Memory**
 
-KeySync Lite uses **Qdrant as the adaptive brain** of the system, not just a simple vector lookup:
+KeySync Lite uses **Qdrant Vector Database as the core memory layer** for:
 
-- **Multi-Collection Memory Layer:**
-  - `keysync_knowledge` – Dubai-specific area guides, community info, FAQs, and firm playbooks
-  - `properties` – Firm inventory with semantic search and payload filters (area, budget, bedrooms)
-  - `lead_memory` – Every processed lead stored with outcomes for adaptive learning
+- **Dubai knowledge** (areas, communities, developer info)
+- **Firm-specific property inventory**
+- **Agent personas and communication styles**
+- **Past leads and their outcomes** (`lead_memory`)
 
-- **Outcome-Aware Intelligence:**
-  - Property re-ranking based on conversion history from similar past leads
-  - Persona routing optimized using historical conversion rates
-  - Transparent learning visible in AI Pipeline UI (similar leads & outcomes)
+**Vector + payload filters** for precise property retrieval:
+- Filter by area, budget range, bedrooms, and firm_id
 
-- **Semantic Property Search:**
-  - Text-based embeddings for intelligent property matching
-  - Property recommendations with images when explicitly requested
-  - Support for 10+ curated Dubai properties with metadata
+**Outcome-aware re-ranking:**
+- Similar past leads and their conversion outcomes from `lead_memory` are used to boost properties that have worked well before
+
+**Property recommendations** returned as rich cards (images, area, price, bedrooms) when the user explicitly asks for options
 
 #### 💬 **Omni-Channel Simulation**
 - **WhatsApp Demo** – Realistic chat interface with AI responses
