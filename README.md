@@ -173,13 +173,16 @@ KeySync Lite uses **Qdrant as the adaptive brain** of the system, not just a sim
 - Time range and team filters (Luxury, Off-Plan, Rental)
 
 #### 🔬 **AI Pipeline Visualization**
-- Step-by-step breakdown of lead processing:
+
+- **Step-by-step breakdown of lead processing:**
   1. Input Received
   2. Gemini: Understanding & Extraction
-  3. Qdrant: Retrieval
-  4. Gemini: Response Generation
-  5. Scoring & Routing
-- Real-time status indicators and technical details
+  3. Qdrant: Knowledge + Property Retrieval
+  4. Qdrant: Similar Leads & Outcome-Based Signals (`lead_memory`)
+  5. Persona Selection & Gemini: Response Generation
+  6. Scoring & Routing (AI vs Manager)
+
+- **Real-time status indicators**, including which Qdrant collections were used and how they influenced the final decision
 
 #### 🏠 **Property Recommendation Engine**
 - Conditional property retrieval (only when user requests)
@@ -265,11 +268,11 @@ KeySync Lite uses **Qdrant as the adaptive brain** of the system, not just a sim
   - Text embedding generation (768-dim vectors)
   - Response generation with persona-specific prompts
 - **Qdrant Vector Database** (Adaptive Memory Layer) for:
-  - Multi-collection semantic search (`keysync_knowledge`, `properties`, `lead_memory`)
-  - Dubai-specific knowledge base retrieval
-  - Outcome-aware property re-ranking
-  - Adaptive persona routing based on conversion history
-  - Transparent learning visualization
+  - Semantic search across multiple collections
+  - Dubai-specific knowledge base (`keysync_knowledge`)
+  - Property recommendations with outcome-aware re-ranking (`properties` + `lead_memory`)
+  - Adaptive persona routing based on conversion history (`lead_memory`)
+  - Transparent learning visualization in AI Pipeline UI
 
 ### Data Flow
 
