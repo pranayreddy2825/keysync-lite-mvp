@@ -263,14 +263,16 @@ KeySync Lite uses **Qdrant Vector Database as the core memory layer** for:
 **AI & Data:**
 - **Google Gemini 2.0 Flash** for:
   - Lead analysis and extraction
-  - Text embedding generation (768-dim vectors)
-  - Response generation with persona-specific prompts
-- **Qdrant Vector Database** (Adaptive Memory Layer) for:
-  - Semantic search across multiple collections
-  - Dubai-specific knowledge base (`keysync_knowledge`)
-  - Property recommendations with outcome-aware re-ranking (`properties` + `lead_memory`)
-  - Adaptive persona routing based on conversion history (`lead_memory`)
-  - Transparent learning visualization in AI Pipeline UI
+  - Text embedding generation
+  - Response generation
+- **Qdrant Vector Database** for:
+  - **Multi-collection memory:**
+    - `firm_knowledge` – Dubai guides, community info, internal playbooks
+    - `properties` – inventory with text + filters (area, price, bedrooms, firm_id)
+    - `personas` – embeddings of our AI agents and their target lead profiles
+    - `lead_memory` – past leads with score, persona, recommended properties, and outcome
+  - Vector + payload filtering for property search and firm-specific queries
+  - Outcome-aware signals that re-rank properties and bias persona selection based on what has historically converted
 
 ### Data Flow
 
@@ -362,35 +364,37 @@ keysync-lite-mvp/
 
 ## 🧠 Qdrant – Adaptive AI Memory (The Brain of KeySync Lite)
 
-KeySync Lite doesn't treat Qdrant as a simple vector lookup. Qdrant is the **core memory layer** that makes the product behave like a learning brokerage brain instead of a generic chatbot.
+KeySync Lite doesn't treat Qdrant as a simple vector index. Qdrant is the **core memory layer** that makes the product behave like a learning brokerage brain instead of a generic chatbot.
 
 ### What We Store in Qdrant
 
 We use multiple Qdrant collections, each representing a different slice of the brokerage's memory:
 
-- **`keysync_knowledge`** – Area guides, community descriptions, developer information, FAQs, and internal playbooks about how the firm sells and positions Dubai properties.
+- **`firm_knowledge`** – Area guides, community descriptions, developer information, FAQs, and internal playbooks about how the firm sells and positions Dubai properties.
 
-- **`properties`** – The firm's inventory: descriptions, areas, bedrooms, price bands, type (rent/sale/off-plan), and images, all embedded for semantic search with payload filters (e.g., area, budget, bedrooms).
+- **`properties`** – The firm's property inventory: descriptions, areas, bedrooms, price bands, type (rent/sale/off-plan), and images, all embedded for semantic search with payload filters (e.g., area, budget, bedrooms, firm_id).
 
-- **`lead_memory`** – Every processed lead becomes a Qdrant point with its message embedding, score, priority, persona used, channel, recommended properties, and outcome (converted/lost/no_response/in_progress). This collection enables adaptive learning by storing what worked and what didn't.
+- **`personas`** – Embeddings of our three AI agents (Sarah, Priya, Omar) and their communication styles, strengths, and target lead profiles, tuned to each firm's brand tone and business model.
 
-This turns Qdrant into a unified memory graph of **knowledge, inventory, and conversion outcomes**.
+- **`lead_memory`** – Every processed lead becomes a Qdrant point with its message embedding, score, priority, persona used, channel, recommended properties, and outcome (converted/lost/no_response/in_progress).
+
+This turns Qdrant into a unified memory graph of **knowledge, inventory, behavior, and results**.
 
 ### How Qdrant Powers Each Lead
 
 For every incoming lead, KeySync Lite runs a multi-step pipeline where Qdrant is hit several times:
 
-1. **Context retrieval (`keysync_knowledge`)**  
-   We embed the lead message with Gemini and query Qdrant to pull the most relevant Dubai-specific knowledge and firm-specific snippets. This keeps responses grounded and reduces hallucinations.
+1. **Context retrieval (`firm_knowledge`)**  
+   Gemini embeds the lead message and queries Qdrant to pull the most relevant Dubai-specific knowledge and firm-specific snippets. This keeps responses grounded and reduces hallucinations.
 
-2. **Adaptive persona selection (baseline rules + `lead_memory`)**  
-   We start with rule-based persona selection (intent, budget, area, keywords), then query `lead_memory` for similar past leads. We analyze conversion rates per persona and bias the selection toward agents who historically convert similar leads best. This creates a learning system that gets smarter over time.
+2. **Persona selection (`personas` + `lead_memory`)**  
+   We compare the current lead against persona embeddings and past leads to decide whether Sarah, Priya, or Omar is the best fit, biasing toward personas that historically convert similar leads.
 
-3. **Property matching (`properties`)**  
+3. **Property matching (`properties` + filters)**  
    When the lead is ready for recommendations, we combine:
    - Gemini embeddings of the lead,
    - Qdrant vector search over the `properties` collection,
-   - And payload filters like area, budget range, bedrooms, and firm_id,  
+   - Payload filters like area, budget range, bedrooms, and firm_id,  
    to return properties that are both semantically relevant and commercially viable.
 
 4. **Learning from outcomes (`lead_memory`)**  
@@ -419,99 +423,54 @@ Most "AI + real estate" demos stop at basic retrieval-augmented generation. KeyS
 
 - **Transparent intelligence** – In the AI Pipeline UI, we surface Qdrant's contributions (top knowledge hits, matched properties, similar past leads and outcomes) so teams and judges can see how the memory layer is influencing each decision.
 
-By treating Qdrant as the **brain** of the system rather than a simple vector index, KeySync Lite delivers an AI that is:  
-**grounded, firm-specific, and continuously learning from every conversation.**
+By treating Qdrant as the **brain** of the system rather than a simple vector index, KeySync Lite delivers an AI that is grounded, firm-specific, and continuously learning from every conversation.
 
 ---
 
-## 🎭 Agent Training & Conversation Design
+## 🎭 Specialized AI Agents & Conversational Design
 
-KeySync Lite's three AI agents are not generic chatbots – they are **psychologically-aware sales specialists** trained to talk like top-performing real estate agents and systematically upgrade low-quality leads into highly qualified briefs.
+KeySync Lite's agents are not generic chatbots. Each one is designed to talk like a top-performing Dubai sales agent who knows how to build trust and move conversations forward.
 
-### Agent Architecture
+### Natural, WhatsApp-First Conversation Style
 
-Each agent uses a **layered prompt system**:
+All agents share a common behavior pattern:
 
-1. **Base System Prompt** (shared by all agents)
-   - Natural, conversational WhatsApp style
-   - Lead qualification framework: acknowledge → insight → 2-3 questions
-   - Safety guidelines and brand protection
-   - No technical jargon, no robotic phrases
+- They introduce themselves on the first message:  
+  "Hi, I'm [Agent Name] from [Firm Name]. Thanks for reaching out."
 
-2. **Persona-Specific Prompt** (unique per agent)
-   - **Sarah**: Luxury specialist with polished, concierge-style tone
-   - **Priya**: Rental specialist with friendly, practical, empathetic approach
-   - **Omar**: Investment advisor with strategic, numbers-aware, professional tone
+- They reply in short, natural paragraphs – no bullet lists, no robotic phrasing.
 
-3. **Conversation Context** (dynamic per message)
-   - First message introduction logic
-   - Property request handling
-   - Lead analysis and Qdrant knowledge context
+- They use contractions ("I'm", "you'll", "we're") and a conversational tone that fits WhatsApp.
 
-4. **Lead Upgrade Rules** (applied to every reply)
-   - Structured 3-step pattern for consistent qualification
-   - WhatsApp formatting guidelines (2-4 paragraphs, no bullets)
+- They always do three things in each reply:
+  1. Acknowledge what the client said.  
+  2. Add one helpful insight, suggestion, or reassurance.  
+  3. Ask 2–3 smart, non-interrogative questions to clarify budget, area, timeframe, and purpose (buy/rent/invest).
 
-### Lead Upgrade Strategy
+This turns even vague messages like "send some photos" into qualified briefs without feeling like a form.
 
-Every agent reply follows this pattern to upgrade vague leads:
+### Agent Personas (All Powered by Gemini + Qdrant)
 
-1. **Acknowledge** what the client just said
-   - Shows active listening
-   - Validates their inquiry
+- **Sarah Al Mansoori – Luxury Specialist**  
+  Speaks in a polished, concierge-like style to high-budget buyers in prime areas. She emphasizes lifestyle, views, finishes, and service, and treats strong leads like VIP clients.
 
-2. **Add one helpful insight or reassurance**
-   - Uses Qdrant knowledge snippets about Dubai/areas
-   - Builds trust and demonstrates expertise
-   - Makes the client feel understood
+- **Priya Varma – Rental & Mid-Market Specialist**  
+  Friendly and practical, she guides renters and mid-budget movers through tradeoffs between areas, commute, schools, and budget, helping them feel calm and informed.
 
-3. **Ask 2-3 specific, natural questions**
-   - Budget range
-   - Preferred areas
-   - Timeframe
-   - Purpose (buy/rent/invest)
-   - Never interrogates – questions flow naturally in conversation
+- **Omar Haddad – Investment & Off-Plan Advisor**  
+  Strategic and numbers-aware without being too technical, he explains ROI, payment plans, and area performance in simple language, building trust with investors and serious buyers.
 
-### Example: Lead Upgrade in Action
+Under the hood, each persona is powered by Gemini with prompt templates that encode their tone, priorities, and psychological approach, and Qdrant provides the firm-specific knowledge and past-lead memory they draw from.
 
-**Vague Lead:**
-> "Hi, I'm moving to Dubai and need a place"
+### Upgrading Low-Quality Leads
 
-**Agent Response (Priya):**
-> "Hi, I'm Priya Varma from KeySync Lite. Thanks for reaching out!
->
-> Moving to Dubai is exciting! I've helped hundreds of families and professionals find their perfect home here, so I know it can feel overwhelming at first.
->
-> To help me find the best options for you, could you tell me roughly what monthly budget you're thinking, and when you're planning to move? Also, are you looking to rent or buy?"
+Using this conversational design, KeySync Lite can:
 
-**Result:** A vague inquiry becomes a qualified lead with budget, timeframe, and intent clarified.
+- Take noisy or low-effort messages and gently guide clients into sharing real budgets, areas, and timelines.
 
-### Persona Selection Logic
+- Turn casual browsers into serious prospects by quickly clarifying intent.
 
-Agents are selected using a **two-stage process**:
-
-1. **Baseline Rules** (immediate selection)
-   - Rent intent → Priya
-   - Investment/off-plan keywords → Omar
-   - Luxury areas (Palm, Downtown, Marina) → Sarah
-   - High budgets → Sarah
-
-2. **Qdrant Memory Enhancement** (adaptive optimization)
-   - Query `lead_memory` for similar past leads
-   - Calculate conversion rates per persona
-   - Override baseline if a different persona has significantly better conversion (requires ≥3 similar leads with data)
-   - Visible in AI Pipeline UI as "Memory-Optimized" vs "Baseline Rules"
-
-This dual approach ensures both **immediate intelligence** (rules) and **continuous improvement** (memory).
-
-### Conversation Quality Features
-
-- **First Message Introduction**: Agents introduce themselves naturally on first contact
-- **No Re-Introduction**: Follow-up messages continue conversation without repeating introductions
-- **Natural Language**: Uses contractions, short paragraphs, conversational flow
-- **No Bullets or Lists**: WhatsApp-style formatting, not email-style
-- **Property Mentions**: Only when explicitly requested (strict detection patterns)
-- **Transparent Learning**: AI Pipeline UI shows similar leads and how Qdrant influenced decisions
+- Free human agents to focus on the hottest opportunities, while AI nurtures and qualifies the rest.
 
 ---
 
