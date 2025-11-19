@@ -536,6 +536,18 @@ function choosePersona(analysis, text) {
   return PERSONAS.find((p) => p.id === "omar");
 }
 
+/**
+ * Builds conversation context block for the AI prompt.
+ * Handles first message introduction logic cleanly.
+ */
+function buildConversationContextBlock(isFirstMessage, agentName, firmName) {
+  if (isFirstMessage) {
+    return `This is your FIRST message in this conversation. You MUST start with: "Hi, I'm ${agentName} from ${firmName}. Thanks for reaching out!" Then continue naturally.`;
+  } else {
+    return `This is NOT your first message. Do NOT re-introduce yourself. Continue the conversation naturally.`;
+  }
+}
+
 // --- Basic reply generator (template style, fallback only) ---
 function generateBasicReply(analysis, persona, isFirstMessage = true) {
   const { intent, area, timeframe } = analysis;
@@ -626,9 +638,7 @@ ${personaSpecificPrompt}
 
 CRITICAL INSTRUCTIONS FOR THIS REPLY:
 
-${isFirstMessage 
-  ? `This is your FIRST message in this conversation. You MUST start with: "Hi, I'm ${persona.name} from ${FIRM_NAME}. Thanks for reaching out!" Then continue naturally.`
-  : `This is NOT your first message. Do NOT re-introduce yourself. Continue the conversation naturally.`}
+${buildConversationContextBlock(isFirstMessage, persona.name, FIRM_NAME)}
 
 ${userRequestedProperties 
   ? 'The user EXPLICITLY asked to see properties/listings/photos. Mention the properties provided below naturally and offer to share more details or photos.' 
