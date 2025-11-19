@@ -1503,7 +1503,7 @@ app.post("/api/lead", async (req, res) => {
       `Similar leads found: ${similarLeads.length}`
     ];
 
-    return res.json({
+    const responsePayload = {
       analysis,
       persona: safePersona,
       knowledge,
@@ -1514,7 +1514,14 @@ app.post("/api/lead", async (req, res) => {
       // Add adaptive learning data for UI
       similar_leads: similarLeads,
       persona_metadata: personaMetadata
-    });
+    };
+    
+    console.log(`📤 Sending response with ${recommendedProperties.length} properties`);
+    if (recommendedProperties.length > 0) {
+      console.log("Property titles:", recommendedProperties.map(p => p.title).join(", "));
+    }
+    
+    return res.json(responsePayload);
   } catch (err) {
     console.error("Error in /api/lead:", err);
     return res
