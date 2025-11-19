@@ -286,7 +286,7 @@ Gemini Analysis → Extract: intent, budget, area, timeline, client_type
 Generate Lead Embedding → Query Qdrant lead_memory for similar past leads
     ↓
 Qdrant Multi-Collection Queries:
-    - keysync_knowledge: Retrieve Dubai-specific context
+    - firm_knowledge: Retrieve Dubai-specific context
     - properties: Semantic property search (if requested)
     - lead_memory: Find similar leads + outcomes for adaptive routing
     ↓
