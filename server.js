@@ -685,8 +685,6 @@ ${fullSystemPrompt}
 
 CRITICAL INSTRUCTIONS FOR THIS REPLY:
 
-${buildConversationContextBlock(isFirstMessage, persona.name, FIRM_NAME)}
-
 ${userRequestedProperties 
   ? 'The user EXPLICITLY asked to see properties/listings/photos. Mention the properties provided below naturally and offer to share more details or photos.' 
   : 'The user did NOT ask to see properties. DO NOT mention any properties, listings, or photos. Focus on qualifying the lead by asking 2-3 natural questions about budget, area preferences, timeframe, and purpose (buy/rent/invest).'}
