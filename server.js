@@ -700,8 +700,8 @@ function isRequestingProperties(text) {
   // Pattern 1: "show me [properties/listings/photos/images]"
   const showMePattern = /(show\s+me|show|display|send\s+me|send|share\s+me|share)\s+(me\s+)?(the\s+)?(properties|listings|photos?|pictures?|images?)/i;
   
-  // Pattern 2: "can/could/would you show [properties/listings/photos]"
-  const canYouShowPattern = /(can|could|would)\s+(you\s+)?(show|send|share)\s+(me\s+)?(some|any|the\s+)?(properties|listings|photos?|pictures?|images?)/i;
+  // Pattern 2: "can/could/would you show/suggest [properties/listings/photos]"
+  const canYouShowPattern = /(can|could|would)\s+(you\s+)?(show|send|share|suggest)\s+(me\s+)?(some|any|the\s+)?(properties|listings|photos?|pictures?|images?)/i;
   
   // Pattern 3: "I want to see [properties/listings/photos]"
   const wantToSeePattern = /(want|would\s+like|like)\s+(to\s+)?(see|view|look\s+at)\s+(properties|listings|photos?|pictures?|images?)/i;
@@ -710,16 +710,22 @@ function isRequestingProperties(text) {
   const letMeSeePattern = /(let\s+me\s+see|can\s+i\s+see)\s+(properties|listings|photos?|pictures?|images?)/i;
   
   // Pattern 5: Direct requests like "properties please", "show listings", "photos?"
-  const directRequestPattern = /^(show|send|share|display)\s+(properties|listings|photos?|pictures?|images?)/i;
+  const directRequestPattern = /^(show|send|share|display|give)\s+(me\s+)?(some\s+)?(properties|listings|photos?|pictures?|images?)/i;
   
   // Pattern 6: "do you have [any] properties/listings to show"
   const haveToShowPattern = /(do\s+you\s+have|have\s+you\s+got)\s+(any\s+)?(properties|listings|photos?|pictures?|images?)\s+(to\s+)?(show|send|share)/i;
   
-  // Pattern 7: Explicit photo/image requests
-  const photoImagePattern = /(show|send|share|see|view)\s+(me\s+)?(the\s+)?(photos?|pictures?|images?)/i;
+  // Pattern 7: Explicit photo/image requests - "give me photos", "suggest photos", etc.
+  const photoImagePattern = /(show|send|share|see|view|give|suggest)\s+(me\s+)?(some\s+)?(the\s+)?(photos?|pictures?|images?|properties|listings)/i;
   
   // Pattern 8: "what properties/listings do you have" (explicit property term required)
   const whatPropertiesPattern = /what\s+(properties|listings|photos?|pictures?|images?)\s+(do\s+you\s+have|are\s+available)/i;
+  
+  // Pattern 9: "give me [some] [property] photos/properties"
+  const giveMePattern = /give\s+me\s+(some\s+)?(property\s+)?(photos?|pictures?|images?|properties|listings)/i;
+  
+  // Pattern 10: "suggest me [some] photos/properties"
+  const suggestMePattern = /suggest\s+(me\s+)?(some\s+)?(photos?|pictures?|images?|properties|listings)/i;
   
   // Check all patterns
   const patterns = [
@@ -730,7 +736,9 @@ function isRequestingProperties(text) {
     directRequestPattern,
     haveToShowPattern,
     photoImagePattern,
-    whatPropertiesPattern
+    whatPropertiesPattern,
+    giveMePattern,
+    suggestMePattern
   ];
   
   return patterns.some(pattern => pattern.test(text));
