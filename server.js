@@ -906,7 +906,8 @@ function isRequestingProperties(text) {
   const showMePattern = /(show\s+me|show|display|send\s+me|send|share\s+me|share)\s+(me\s+)?(the\s+)?(properties|listings|photos?|pictures?|images?)/i;
   
   // Pattern 2: "can/could/would you show/suggest [properties/listings/photos]"
-  const canYouShowPattern = /(can|could|would)\s+(you\s+)?(show|send|share|suggest)\s+(me\s+)?(some|any|the\s+)?(properties|listings|photos?|pictures?|images?)/i;
+  // Updated to handle "the property photos" and similar phrases
+  const canYouShowPattern = /(can|could|would)\s+(you\s+)?(show|send|share|suggest)\s+(me\s+)?(some|any|the\s+)?(property\s+)?(properties|listings|photos?|pictures?|images?)/i;
   
   // Pattern 3: "I want to see [properties/listings/photos]"
   const wantToSeePattern = /(want|would\s+like|like)\s+(to\s+)?(see|view|look\s+at)\s+(properties|listings|photos?|pictures?|images?)/i;
@@ -1426,6 +1427,7 @@ app.post("/api/lead", async (req, res) => {
 
     // Only get recommended properties if user explicitly asks for them
     const shouldShowProperties = isRequestingProperties(text);
+    console.log(`🔍 Property request check for: "${text}" -> ${shouldShowProperties ? 'YES' : 'NO'}`);
     
     // Find similar leads for UI display (regardless of property request)
     let similarLeads = [];
@@ -1436,17 +1438,20 @@ app.post("/api/lead", async (req, res) => {
     }
 
     if (shouldShowProperties) {
-      console.log("User is requesting properties/listings - fetching recommendations");
+      console.log("✅ User is requesting properties/listings - fetching recommendations");
       try {
         // Use adaptive property search with outcome-aware re-ranking
         recommendedProperties = await searchAndRerankPropertiesForLead(leadEmbedding, analysis, text);
-        console.log("Recommended properties:", recommendedProperties.length);
+        console.log(`✅ Retrieved ${recommendedProperties.length} recommended properties`);
+        if (recommendedProperties.length > 0) {
+          console.log("Property IDs:", recommendedProperties.map(p => p.id || p.title).join(", "));
+        }
       } catch (err) {
-        console.error("Error getting recommended properties:", err);
+        console.error("❌ Error getting recommended properties:", err);
         // Continue without properties - not a critical failure
       }
     } else {
-      console.log("User query does not request properties - skipping property retrieval");
+      console.log("❌ User query does not request properties - skipping property retrieval");
     }
 
     if (isHighPriority) {
