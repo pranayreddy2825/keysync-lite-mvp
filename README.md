@@ -287,6 +287,72 @@ keysync-lite-mvp/
 
 ---
 
+## 🧠 Qdrant – Adaptive AI Memory (The Brain of KeySync Lite)
+
+KeySync Lite doesn't treat Qdrant as a simple vector lookup. Qdrant is the **core memory layer** that makes the product behave like a learning brokerage brain instead of a generic chatbot.
+
+### What We Store in Qdrant
+
+We use multiple Qdrant collections, each representing a different slice of the brokerage's memory:
+
+- **`keysync_knowledge`** – Area guides, community descriptions, developer information, FAQs, and internal playbooks about how the firm sells and positions Dubai properties.
+
+- **`properties`** – The firm's inventory: descriptions, areas, bedrooms, price bands, type (rent/sale/off-plan), and images, all embedded for semantic search with payload filters (e.g., area, budget, bedrooms).
+
+- **`personas`** – Embeddings of our three AI agents (Sarah, Priya, Omar) and their communication styles, strengths, and target lead profiles, tuned to each firm's brand tone and business model.
+
+- **`lead_memory`** – Every processed lead becomes a Qdrant point with its message embedding, score, priority, persona used, channel, recommended properties, and outcome (converted/lost/no_response/in_progress).
+
+This turns Qdrant into a unified memory graph of **knowledge, inventory, behavior, and results**.
+
+### How Qdrant Powers Each Lead
+
+For every incoming lead, KeySync Lite runs a multi-step pipeline where Qdrant is hit several times:
+
+1. **Context retrieval (`keysync_knowledge`)**  
+   We embed the lead message with Gemini and query Qdrant to pull the most relevant Dubai-specific knowledge and firm-specific snippets. This keeps responses grounded and reduces hallucinations.
+
+2. **Persona selection (`personas` + `lead_memory`)**  
+   We use vector similarity against the personas collection (and optionally `lead_memory`) to decide whether Sarah (luxury), Priya (rental/mid-market), or Omar (investor/off-plan) is the best fit for this specific lead. The `lead_memory` collection allows us to bias persona selection toward agents who historically convert similar leads best.
+
+3. **Property matching (`properties`)**  
+   When the lead is ready for recommendations, we combine:
+   - Gemini embeddings of the lead,
+   - Qdrant vector search over the `properties` collection,
+   - And payload filters like area, budget range, bedrooms, and firm_id,  
+   to return properties that are both semantically relevant and commercially viable.
+
+4. **Learning from outcomes (`lead_memory`)**  
+   After each lead is handled, we embed the original message and store it in `lead_memory` with:
+   - lead_score, priority, selected persona,
+   - recommended property IDs,
+   - and an outcome field (converted/lost/no_response/in_progress).  
+   When a new lead comes in, we query `lead_memory` for **similar past leads** and use their outcomes to:
+   - Boost properties that converted for similar leads (outcome-aware re-ranking),
+   - Bias persona routing toward the agent who historically converts that kind of lead best.
+
+This creates a **closed feedback loop**: Qdrant is not only storing context, it is actively steering decisions for new leads.
+
+### Why Qdrant Makes Our AI Different
+
+Most "AI + real estate" demos stop at basic retrieval-augmented generation. KeySync Lite goes further by making Qdrant the decision and learning layer:
+
+- **Firm-specific brain** – Each brokerage can have its own knowledge, inventory, personas, and lead history stored under its firm_id, so the AI feels like *their* team, not a generic SaaS.
+
+- **Less hallucination, more precision** – Responses are grounded in actual Dubai knowledge and the firm's real properties, retrieved through Qdrant with vector + payload filters.
+
+- **Adaptive conversion memory** – The `lead_memory` collection turns past leads and their outcomes into signals for future ranking and routing. Over time, KeySync Lite gets better at choosing:
+  - which properties to show,
+  - which persona should respond,
+  - and how to prioritize similar leads.
+
+- **Transparent intelligence** – In the AI Pipeline UI, we surface Qdrant's contributions (top knowledge hits, matched properties, similar past leads and outcomes) so teams and judges can see how the memory layer is influencing each decision.
+
+By treating Qdrant as the **brain** of the system rather than a simple vector index, KeySync Lite delivers an AI that is:  
+**grounded, firm-specific, and continuously learning from every conversation.**
+
+---
+
 ## 🚀 Setup Guide
 
 ### Prerequisites
