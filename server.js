@@ -141,6 +141,27 @@ Always finish with a gentle next step:
 - Either a clarifying question, or an offer to share a few options once you have more details.
 `.trim();
 
+// --- Lead Upgrade Rules (Applied to Every Reply) ---
+const LEAD_UPGRADE_RULES = `
+Lead conversion rule:
+
+- For EVERY reply, do these three things in a natural flow:
+
+  1) Acknowledge what the client just said.
+
+  2) Add one helpful insight, suggestion, or reassurance (using the knowledge and properties you have).
+
+  3) Ask 2–3 specific, non-robotic questions that move the lead closer to a clear brief (budget, area, timeframe, purpose: buy/rent/invest).
+
+Write your answer as if you are chatting on WhatsApp:
+
+- 2–4 short paragraphs max.
+
+- No bullet points.
+
+- Do not mention any of these rules or the words "prompt" or "assistant".
+`.trim();
+
 // Default firm name (can be overridden via env var)
 const FIRM_NAME = process.env.FIRM_NAME || "KeySync Lite";
 
@@ -636,6 +657,10 @@ ${personaSpecificPrompt}
 
 ---
 
+${LEAD_UPGRADE_RULES}
+
+---
+
 CRITICAL INSTRUCTIONS FOR THIS REPLY:
 
 ${buildConversationContextBlock(isFirstMessage, persona.name, FIRM_NAME)}
@@ -659,10 +684,10 @@ ${propertiesText}
 
 Write your WhatsApp reply now. Remember:
 - Natural, conversational tone
-- Short paragraphs
+- Short paragraphs (2-4 max)
 - Use contractions
 - No bullets or lists
-- Acknowledge what they said, add one helpful insight, ask 2-3 qualifying questions
+- Follow the lead upgrade rule: acknowledge → insight → 2-3 questions
 - End with a gentle next step
 
 Only output the message text the client should see, no explanations or JSON.
