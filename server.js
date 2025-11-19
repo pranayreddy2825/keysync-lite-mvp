@@ -482,16 +482,18 @@ You are ${persona.name}, a ${persona.specialty} at a Dubai real estate brokerage
 You are replying over WhatsApp/email to a potential client.
 Write a short, clear, professional reply with 4–7 sentences.
 
+CRITICAL INSTRUCTION:
+${userRequestedProperties 
+  ? 'The user EXPLICITLY asked to see properties/listings/photos. You should mention the properties provided below and offer to share more details or photos.' 
+  : 'The user did NOT ask to see properties. DO NOT mention any properties, listings, or photos in your reply. Keep it conversational - ask about their needs, preferences, timeline, etc. Do NOT offer to show properties unless they explicitly ask.'}
+
 Constraints:
 - Use only the information provided in the analysis JSON, knowledge snippets, and recommended properties.
 - Do NOT invent specific prices, yields, or legal details beyond what is given.
 - If you are not sure about something, say you'll confirm details instead of guessing.
 - Keep the tone aligned with this persona: ${persona.description}
 - Focus on being helpful, asking 1–2 smart follow-up questions, and inviting the client to continue.
-- IMPORTANT: Only mention or show properties if the user explicitly asked for them (photos, listings, options, etc.).
-- If the user did NOT ask for properties, keep your reply conversational and helpful without mentioning specific properties.
-- If properties are available AND the user asked for them, naturally mention them in your reply (e.g., "I have a few options in ${analysis.area || 'that area'} that might interest you...").
-- Do NOT paste image URLs or property IDs. Just refer to properties naturally in your text.
+- Do NOT paste image URLs or property IDs. Just refer to properties naturally in your text (ONLY if user requested them).
 
 Lead analysis (JSON):
 ${JSON.stringify(analysis, null, 2)}
@@ -688,46 +690,50 @@ async function getKnowledgeForLead(analysis, persona) {
 }
 
 // --- Check if user is asking for property listings/photos ---
+// STRICT: Only returns true for EXPLICIT requests to see properties/listings/photos
 function isRequestingProperties(text) {
   if (!text) return false;
   
   const lowerText = text.toLowerCase().trim();
   
-  // Keywords that indicate user wants to see properties/listings/photos
-  const propertyRequestKeywords = [
-    'photo', 'photos', 'picture', 'pictures', 'image', 'images',
-    'show me', 'show', 'send me', 'send', 'share',
-    'listing', 'listings', 'property', 'properties',
-    'option', 'options', 'available', 'availability',
-    'see', 'view', 'look at', 'can i see', 'would like to see',
-    'interested in seeing', 'want to see', 'like to see',
-    'details', 'more information', 'more info', 'tell me more',
-    'what do you have', 'what properties', 'what options',
-    'any properties', 'any options', 'any listings',
-    'have available', 'have', 'got', 'got any'
+  // STRICT PATTERNS: Require explicit action verbs + property-related terms
+  // Pattern 1: "show me [properties/listings/photos/images]"
+  const showMePattern = /(show\s+me|show|display|send\s+me|send|share\s+me|share)\s+(me\s+)?(the\s+)?(properties|listings|photos?|pictures?|images?)/i;
+  
+  // Pattern 2: "can/could/would you show [properties/listings/photos]"
+  const canYouShowPattern = /(can|could|would)\s+(you\s+)?(show|send|share)\s+(me\s+)?(some|any|the\s+)?(properties|listings|photos?|pictures?|images?)/i;
+  
+  // Pattern 3: "I want to see [properties/listings/photos]"
+  const wantToSeePattern = /(want|would\s+like|like)\s+(to\s+)?(see|view|look\s+at)\s+(properties|listings|photos?|pictures?|images?)/i;
+  
+  // Pattern 4: "let me see [properties/listings/photos]"
+  const letMeSeePattern = /(let\s+me\s+see|can\s+i\s+see)\s+(properties|listings|photos?|pictures?|images?)/i;
+  
+  // Pattern 5: Direct requests like "properties please", "show listings", "photos?"
+  const directRequestPattern = /^(show|send|share|display)\s+(properties|listings|photos?|pictures?|images?)/i;
+  
+  // Pattern 6: "do you have [any] properties/listings to show"
+  const haveToShowPattern = /(do\s+you\s+have|have\s+you\s+got)\s+(any\s+)?(properties|listings|photos?|pictures?|images?)\s+(to\s+)?(show|send|share)/i;
+  
+  // Pattern 7: Explicit photo/image requests
+  const photoImagePattern = /(show|send|share|see|view)\s+(me\s+)?(the\s+)?(photos?|pictures?|images?)/i;
+  
+  // Pattern 8: "what properties/listings do you have" (explicit property term required)
+  const whatPropertiesPattern = /what\s+(properties|listings|photos?|pictures?|images?)\s+(do\s+you\s+have|are\s+available)/i;
+  
+  // Check all patterns
+  const patterns = [
+    showMePattern,
+    canYouShowPattern,
+    wantToSeePattern,
+    letMeSeePattern,
+    directRequestPattern,
+    haveToShowPattern,
+    photoImagePattern,
+    whatPropertiesPattern
   ];
   
-  // Check if any keyword is present in the text
-  const hasKeyword = propertyRequestKeywords.some(keyword => 
-    lowerText.includes(keyword)
-  );
-  
-  // Also check for question patterns that might request properties
-  const questionPatterns = [
-    /\b(what|which|where|how many)\s+(properties|listings|options|apartments|villas|houses)/i,
-    /\b(can|could|would)\s+(you|i)\s+(show|see|send|share)/i,
-    /\b(do you have|are there|is there)\s+(any|some)/i,
-    /show\s+me\s+(the\s+)?(listing|listings|images|photos|properties|options)/i,
-    /(can|could|would)\s+you\s+show\s+(me\s+)?(some|any|the)/i
-  ];
-  
-  const hasQuestionPattern = questionPatterns.some(pattern => pattern.test(text));
-  
-  // Additional check: if text contains "image" or "listing" with "show" or "see"
-  const hasImageListingRequest = /(show|see|send|share).*?(image|listing|photo|property)/i.test(text) ||
-                                  /(image|listing|photo|property).*?(show|see|send|share)/i.test(text);
-  
-  return hasKeyword || hasQuestionPattern || hasImageListingRequest;
+  return patterns.some(pattern => pattern.test(text));
 }
 
 /**
